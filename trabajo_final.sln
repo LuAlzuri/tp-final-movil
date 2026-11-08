@@ -5,6 +5,10 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "turnero_peluqueria", "turnero_peluqueria\turnero_peluqueria.csproj", "{6309591E-CF38-4F6F-B0C2-A868087F4087}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerificacionModelo", "tests\VerificacionModelo\VerificacionModelo.csproj", "{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,8 +31,23 @@ Global
 		{6309591E-CF38-4F6F-B0C2-A868087F4087}.Release|x64.Build.0 = Release|Any CPU
 		{6309591E-CF38-4F6F-B0C2-A868087F4087}.Release|x86.ActiveCfg = Release|Any CPU
 		{6309591E-CF38-4F6F-B0C2-A868087F4087}.Release|x86.Build.0 = Release|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Debug|x64.Build.0 = Debug|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Debug|x86.Build.0 = Debug|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Release|x64.ActiveCfg = Release|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Release|x64.Build.0 = Release|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Release|x86.ActiveCfg = Release|Any CPU
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

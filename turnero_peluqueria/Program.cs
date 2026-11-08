@@ -1,4 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using turnero_peluqueria.Data;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AppDbContext>(opciones =>
+{
+    var conexion = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection para acceder a la base de datos.");
+    opciones.UseSqlServer(conexion);
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
