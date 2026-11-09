@@ -5,8 +5,17 @@ using turnero_peluqueria.Security;
 
 namespace turnero_peluqueria.Services;
 
-internal sealed class AuditoriaAccionesService(AppDbContext db, IHttpContextAccessor contextoHttp)
+public sealed class AuditoriaAccionesService(AppDbContext db, IHttpContextAccessor contextoHttp)
 {
+    public async Task GuardarAltaAsync(Action registrarAlta, CancellationToken ct)
+    {
+        await using var transaccion = await db.Database.BeginTransactionAsync(ct);
+        await Cuentas.Guardar(db, ct);
+        registrarAlta();
+        await db.SaveChangesAsync(ct);
+        await transaccion.CommitAsync(ct);
+    }
+
     public void Registrar(string accion, string entidad, int entidadId, Usuario? autor = null)
     {
         var contexto = contextoHttp.HttpContext;

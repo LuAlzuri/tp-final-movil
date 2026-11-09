@@ -6,13 +6,14 @@ using turnero_peluqueria.Data;
 using turnero_peluqueria.DTOs;
 using turnero_peluqueria.Entities;
 using turnero_peluqueria.Exceptions;
+using turnero_peluqueria.Services;
 
 namespace turnero_peluqueria.Controllers;
 
 [ApiController]
 [Route("api/tutores")]
 [Authorize(Roles = Usuario.RolVeterinario)]
-public class TutoresController(AppDbContext db) : ControllerBase
+public class TutoresController(AppDbContext db, AuditoriaAccionesService auditoria, BajasPerfilesService bajas) : ControllerBase
 {
     private IQueryable<Tutor> Activos => db.Tutores.Where(t => !t.Eliminado);
 
@@ -51,7 +52,12 @@ public class TutoresController(AppDbContext db) : ControllerBase
 
         db.Tutores.Add(tutor);
         db.TelefonosTutores.AddRange(telefonos);
-        await Cuentas.Guardar(db, ct);
+        await auditoria.GuardarAltaAsync(() =>
+        {
+            auditoria.Registrar("Crear", nameof(Tutor), tutor.Id);
+            foreach (var telefono in telefonos)
+                auditoria.Registrar("Crear", nameof(TelefonoTutor), telefono.Id);
+        }, ct);
 
         var usuario = tutor.Usuario;
         var respuesta = new TutorRespuesta(tutor.Id, tutor.UserId, usuario.Username, usuario.Email, usuario.Nombre,
@@ -65,7 +71,15 @@ public class TutoresController(AppDbContext db) : ControllerBase
         var tutor = await Activos.Include(t => t.Usuario).SingleOrDefaultAsync(t => t.Id == id, ct) ?? throw NoEncontrado();
         await Cuentas.VerificarDisponibilidad(db, datos, tutor.UserId, ct);
         Cuentas.Actualizar(tutor.Usuario, datos);
+        auditoria.Registrar("Modificar", nameof(Tutor), id);
         await Cuentas.Guardar(db, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken ct)
+    {
+        await bajas.EliminarTutorAsync(id, ct);
         return NoContent();
     }
 
