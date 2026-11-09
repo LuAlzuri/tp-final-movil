@@ -35,6 +35,7 @@ builder.Services.AddDbContext<AppDbContext>(opciones =>
 
 builder.Services.AgregarAutenticacion(builder.Configuration);
 builder.Services.AddScoped<BajasService>();
+builder.Services.AddScoped<TurnosService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
