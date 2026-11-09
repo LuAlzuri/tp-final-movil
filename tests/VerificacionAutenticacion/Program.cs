@@ -18,7 +18,7 @@ using turnero_peluqueria.Services;
 
 namespace turnero_peluqueria.Verificaciones;
 
-internal static class VerificacionAutenticacion
+internal static partial class VerificacionAutenticacion
 {
     private const string Ruta = "/api/autenticacion/";
     private const string ContrasenaInicial = "Prueba-inicial-001";
@@ -129,13 +129,15 @@ internal static class VerificacionAutenticacion
 
         using var swagger = JsonDocument.Parse(await cliente.GetStringAsync("/swagger/v1/swagger.json"));
         var rutas = swagger.RootElement.GetProperty("paths");
-        Verificar(rutas.EnumerateObject().Count() == 3 && rutas.TryGetProperty(Ruta + "iniciar-sesion", out var loginSwagger)
+        Verificar(rutas.EnumerateObject().Count(ruta => ruta.Name.StartsWith(Ruta, StringComparison.Ordinal)) == 3
+            && rutas.TryGetProperty(Ruta + "iniciar-sesion", out var loginSwagger)
             && loginSwagger.GetProperty("post").GetProperty("security").GetArrayLength() == 0,
             "Swagger debe mostrar solo las tres rutas y permitir el inicio de sesión anónimo");
         Verificar(swagger.RootElement.GetProperty("components").GetProperty("securitySchemes")
             .GetProperty("Bearer").GetProperty("scheme").GetString() == "bearer", "Swagger debe ofrecer autenticación Bearer");
 
         await VerificarLimiteAsync();
+        await VerificarVeterinariosAsync(cliente, admin.Token, vet.Token);
         Console.WriteLine($"Autenticación verificada: {verificaciones} comprobaciones con una base temporal en memoria.");
     }
 
