@@ -16,12 +16,12 @@ public sealed class AuditoriaAccionesService(AppDbContext db, IHttpContextAccess
         await transaccion.CommitAsync(ct);
     }
 
-    public void Registrar(string accion, string entidad, int entidadId, Usuario? autor = null) =>
-        Registrar(accion, entidad, entidadId.ToString(CultureInfo.InvariantCulture), autor);
+    public void Registrar(string accion, string entidad, int entidadId, Usuario? autor = null, bool automatico = false) =>
+        Registrar(accion, entidad, entidadId.ToString(CultureInfo.InvariantCulture), autor, automatico);
 
-    public void Registrar(string accion, string entidad, string entidadId, Usuario? autor = null)
+    public void Registrar(string accion, string entidad, string entidadId, Usuario? autor = null, bool automatico = false)
     {
-        var contexto = contextoHttp.HttpContext;
+        var contexto = automatico ? null : contextoHttp.HttpContext;
         db.AuditoriaAcciones.Add(new AuditoriaAccion
         {
             UsuarioId = autor?.Id ?? contexto?.User.ObtenerId(),

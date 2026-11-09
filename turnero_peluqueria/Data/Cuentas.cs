@@ -9,6 +9,11 @@ namespace turnero_peluqueria.Data;
 
 internal static class Cuentas
 {
+    public static async Task<int> ExigirVeterinarioAsync(AppDbContext db, int usuarioId, CancellationToken ct) =>
+        await db.Veterinarios.Where(v => v.UserId == usuarioId && !v.Eliminado)
+            .Select(v => (int?)v.Id).SingleOrDefaultAsync(ct)
+        ?? throw new ApiException("No se encontró un perfil veterinario activo.", StatusCodes.Status403Forbidden);
+
     public static Usuario Crear(AltaCuentaSolicitud datos, string rol)
     {
         var usuario = new Usuario { Rol = rol };

@@ -8,20 +8,35 @@ using turnero_peluqueria.Exceptions;
 
 namespace turnero_peluqueria.Services;
 
-public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService auditoria)
+public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService auditoria, VetosService vetos)
 {
     private const int CuposPorSolicitud = 1;
 
-    public async Task<int> SolicitarAsync(int usuarioId, SolicitarTurnoSolicitud datos, CancellationToken ct)
+    public Task<int> SolicitarAsync(int usuarioId, SolicitarTurnoSolicitud datos, CancellationToken ct) =>
+        CrearSolicitudAsync(usuarioId, datos, presencial: false, ct);
+
+    public Task<int> SolicitarPresencialAsync(int usuarioId, SolicitarTurnoSolicitud datos, CancellationToken ct) =>
+        CrearSolicitudAsync(usuarioId, datos, presencial: true, ct);
+
+    private async Task<int> CrearSolicitudAsync(int usuarioId, SolicitarTurnoSolicitud datos, bool presencial, CancellationToken ct)
     {
         var servicios = datos.ServicioIds;
         try
         {
             await using var transaccion = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-            var perro = await db.Perros.AsNoTracking().SingleOrDefaultAsync(p =>
-                p.Id == datos.PerroId && !p.Eliminado && !p.Tutor.Eliminado && p.Tutor.UserId == usuarioId, ct)
+            var perros = db.Perros.AsNoTracking().Where(p => !p.Eliminado && !p.Tutor.Eliminado);
+            if (presencial)
+                await Cuentas.ExigirVeterinarioAsync(db, usuarioId, ct);
+            else
+                perros = perros.Where(p => p.Tutor.UserId == usuarioId);
+
+            var perro = await perros.SingleOrDefaultAsync(p => p.Id == datos.PerroId, ct)
                 ?? throw new ApiException("No se encontró el perro.", StatusCodes.Status404NotFound);
-            await ExigirTutorSinVetoAsync(perro.TutorId, ct);
+            var veto = await vetos.ObtenerVigenteAsync(perro.TutorId, ct);
+            if (presencial && veto is null)
+                throw new ApiException("La reserva presencial requiere un tutor con veto vigente.", StatusCodes.Status409Conflict);
+            if (!presencial && veto is not null)
+                throw SolicitudVetada(veto);
 
             var cupo = await db.CuposDiarios.AsNoTracking().SingleOrDefaultAsync(c => c.Id == datos.CupoId, ct)
                 ?? throw new ApiException("No se encontró el cupo diario.", StatusCodes.Status404NotFound);
@@ -49,7 +64,7 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
             db.CuposTurnos.Add(new CupoTurno { Turno = turno, CupoId = cupo.Id, Cantidad = CuposPorSolicitud });
             db.ServiciosPorTurno.AddRange(servicios.Select(id => new ServicioPorTurno { Turno = turno, ServicioId = id }));
             await db.SaveChangesAsync(ct);
-            auditoria.Registrar("Solicitar", nameof(Turno), turno.Id);
+            auditoria.Registrar(presencial ? "SolicitarPresencial" : "Solicitar", nameof(Turno), turno.Id);
             await db.SaveChangesAsync(ct);
             await transaccion.CommitAsync(ct);
             return turno.Id;
@@ -77,7 +92,7 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
     public Task AprobarAsync(int id, int usuarioId, AprobarTurnoSolicitud datos, CancellationToken ct) =>
         EjecutarCambioAsync(async () =>
         {
-            var veterinarioId = await ExigirVeterinarioAsync(usuarioId, ct);
+            var veterinarioId = await Cuentas.ExigirVeterinarioAsync(db, usuarioId, ct);
             var reserva = await BuscarReservaAsync(id, null, ct);
             ExigirEstado(reserva.Turno, Estado.Pendiente);
 
@@ -107,12 +122,14 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
                 throw EstadoNoPermitido();
 
             CambiarEstado(reserva.Turno, Estado.CanceladoPorTutor, "CancelarPorTutor");
+            var tutorId = await db.Perros.Where(p => p.Id == reserva.Turno.PerroId).Select(p => p.TutorId).SingleAsync(ct);
+            await vetos.EvaluarCancelacionAsync(tutorId, id, ct);
         }, ct);
 
     public Task CompletarAsync(int id, int usuarioId, CompletarTurnoSolicitud datos, CancellationToken ct) =>
         EjecutarCambioAsync(async () =>
         {
-            await ExigirVeterinarioAsync(usuarioId, ct);
+            await Cuentas.ExigirVeterinarioAsync(db, usuarioId, ct);
             var reserva = await BuscarReservaAsync(id, null, ct);
             ExigirEstado(reserva.Turno, Estado.Aprobado);
             if (reserva.CupoDiario.FechaCupo > FechaArgentina.Hoy)
@@ -136,7 +153,7 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
         int estadoFinal, string accion, CancellationToken ct) =>
         EjecutarCambioAsync(async () =>
         {
-            await ExigirVeterinarioAsync(usuarioId, ct);
+            await Cuentas.ExigirVeterinarioAsync(db, usuarioId, ct);
             var reserva = await BuscarReservaAsync(id, null, ct);
             ExigirEstado(reserva.Turno, estadoInicial);
             CambiarEstado(reserva.Turno, estadoFinal, accion);
@@ -186,11 +203,6 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
             ?? throw new ApiException("No se encontró el turno.", StatusCodes.Status404NotFound);
     }
 
-    private async Task<int> ExigirVeterinarioAsync(int usuarioId, CancellationToken ct) =>
-        await db.Veterinarios.Where(v => v.UserId == usuarioId && !v.Eliminado)
-            .Select(v => (int?)v.Id).SingleOrDefaultAsync(ct)
-        ?? throw new ApiException("No se encontró un perfil veterinario activo.", StatusCodes.Status403Forbidden);
-
     private async Task EjecutarCambioAsync(Func<Task> preparar, CancellationToken ct)
     {
         try
@@ -200,7 +212,7 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
             await db.SaveChangesAsync(ct);
             await transaccion.CommitAsync(ct);
         }
-        catch (Exception ex) when (ex.GetBaseException() is SqlException { Number: 1205 or 1222 or 3960 })
+        catch (Exception ex) when (ex.GetBaseException() is SqlException { Number: 1205 or 1222 or 2601 or 2627 or 3960 })
         {
             throw new ApiException("Hubo una modificación simultánea. Consultá el turno y volvé a intentar.", StatusCodes.Status409Conflict);
         }
@@ -226,15 +238,11 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
 
     private static string? LimpiarTexto(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
 
-    private async Task ExigirTutorSinVetoAsync(int tutorId, CancellationToken ct)
+    private static ApiException SolicitudVetada(Veto veto)
     {
-        var veto = await db.Vetos.AsNoTracking().SingleOrDefaultAsync(v => v.TutorId == tutorId && v.FechaFin == null, ct);
-        if (veto is null)
-            return;
-
         var mensaje = veto.VeterinarioId is null
             ? "Por reiteradas cancelaciones, solo podés solicitar turnos acercándote a la veterinaria."
             : "Tu cuenta tiene restringida la solicitud de turnos por la app. Acercate a la veterinaria.";
-        throw new ApiException(mensaje, StatusCodes.Status403Forbidden);
+        return new ApiException(mensaje, StatusCodes.Status403Forbidden);
     }
 }
