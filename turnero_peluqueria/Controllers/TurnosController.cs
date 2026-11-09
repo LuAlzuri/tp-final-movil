@@ -45,6 +45,14 @@ public class TurnosController(AppDbContext db, TurnosService turnos) : Controlle
         return CreatedAtAction(nameof(ObtenerPorId), new { id = turnoId }, await BuscarRespuestaAsync(turnoId, ct));
     }
 
+    [HttpPost("presencial")]
+    [Authorize(Roles = Usuario.RolVeterinario)]
+    public async Task<ActionResult<TurnoRespuesta>> SolicitarPresencial(SolicitarTurnoSolicitud datos, CancellationToken ct)
+    {
+        var turnoId = await turnos.SolicitarPresencialAsync(ExigirUsuarioId(), datos, ct);
+        return CreatedAtAction(nameof(ObtenerPorId), new { id = turnoId }, await BuscarRespuestaAsync(turnoId, ct));
+    }
+
     [HttpPut("{id:int}/servicios")]
     [Authorize(Roles = Usuario.RolTutor)]
     public async Task<IActionResult> ModificarServicios(int id, ServiciosTurnoSolicitud datos, CancellationToken ct)
