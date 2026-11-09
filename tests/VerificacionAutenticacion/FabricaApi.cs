@@ -22,6 +22,7 @@ internal sealed class FabricaApi(int limite = 100) : WebApplicationFactory<globa
     public const string Emisor = "verificacion-turnero";
     public const string Audiencia = "verificacion-app";
     public string Clave { get; } = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+    public string RutaErrores { get; } = Path.Combine(Path.GetTempPath(), $"turnero-verificacion-{Guid.NewGuid():N}-errores-.log");
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -37,7 +38,7 @@ internal sealed class FabricaApi(int limite = 100) : WebApplicationFactory<globa
                 ["LoginRateLimit:PermitLimit"] = limite.ToString(CultureInfo.InvariantCulture),
                 ["LoginRateLimit:WindowSeconds"] = "60",
                 ["Logging:LogLevel:Default"] = "Warning",
-                ["ErrorLog:Path"] = Path.Combine(Path.GetTempPath(), "turnero-verificacion-errores-.log")
+                ["ErrorLog:Path"] = RutaErrores
             });
         });
         builder.ConfigureTestServices(servicios =>

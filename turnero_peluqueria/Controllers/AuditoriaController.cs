@@ -5,13 +5,14 @@ using Microsoft.EntityFrameworkCore;
 using turnero_peluqueria.Data;
 using turnero_peluqueria.DTOs;
 using turnero_peluqueria.Entities;
+using turnero_peluqueria.Services;
 
 namespace turnero_peluqueria.Controllers;
 
 [ApiController]
 [Route("api/auditoria")]
 [Authorize(Roles = Usuario.RolAdministrador)]
-public class AuditoriaController(AppDbContext db) : ControllerBase
+public class AuditoriaController(AppDbContext db, ConsultaErroresService errores) : ControllerBase
 {
     [HttpGet("movimientos")]
     public async Task<ActionResult<List<MovimientoAuditoriaRespuesta>>> ListarMovimientos(
@@ -29,4 +30,11 @@ public class AuditoriaController(AppDbContext db) : ControllerBase
             .Select(m => new MovimientoAuditoriaRespuesta(m.Id, m.UsuarioId, m.UsuarioEmail, m.Accion,
                 m.Entidad, m.EntidadId, m.FechaUtc, m.Ip, m.Observacion)).ToListAsync(ct);
     }
+
+    [HttpGet("errores")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<List<ErrorLogRespuesta>>> ListarErrores(CancellationToken ct,
+        DateOnly? desde = null, DateOnly? hasta = null, [Range(1, 1000000)] int pagina = 1,
+        [Range(1, 100)] int tamano = 20) =>
+        await errores.ListarAsync(desde, hasta, pagina, tamano, ct);
 }

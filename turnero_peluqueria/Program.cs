@@ -17,7 +17,7 @@ builder.Services.AddSingleton<ILoggerProvider>(servicios =>
 {
     var configuracion = servicios.GetRequiredService<IConfiguration>();
     var entorno = servicios.GetRequiredService<IWebHostEnvironment>();
-    var ruta = Path.Combine(entorno.ContentRootPath, configuracion["ErrorLog:Path"] ?? "logs/errores-.log");
+    var ruta = ConsultaErroresService.ObtenerRuta(configuracion, entorno);
     var logger = new LoggerConfiguration().MinimumLevel.Error()
         .WriteTo.File(new JsonFormatter(renderMessage: true), ruta,
             rollingInterval: RollingInterval.Day, fileSizeLimitBytes: 10 * 1024 * 1024,
@@ -38,6 +38,7 @@ builder.Services.AddScoped<BajasService>();
 builder.Services.AddScoped<TurnosService>();
 builder.Services.AddScoped<VetosService>();
 builder.Services.AddScoped<ReportesService>();
+builder.Services.AddScoped<ConsultaErroresService>();
 builder.Services.AddScoped<ImagenPerroService>();
 builder.Services.AddSingleton<IAlmacenImagenes, AlmacenImagenes>();
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
