@@ -12,7 +12,7 @@ namespace turnero_peluqueria.Controllers;
 [ApiController]
 [Route("api/tutores")]
 [Authorize(Roles = Usuario.RolVeterinario)]
-public sealed class TutoresController(AppDbContext db) : ControllerBase
+public class TutoresController(AppDbContext db) : ControllerBase
 {
     private IQueryable<Tutor> Activos => db.Tutores.Where(t => !t.Eliminado);
 

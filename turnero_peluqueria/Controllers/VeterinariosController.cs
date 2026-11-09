@@ -13,7 +13,7 @@ namespace turnero_peluqueria.Controllers;
 [ApiController]
 [Route("api/veterinarios")]
 [Authorize(Roles = Usuario.RolAdministrador)]
-public sealed partial class VeterinariosController(AppDbContext db) : ControllerBase
+public class VeterinariosController(AppDbContext db) : ControllerBase
 {
     private static readonly Expression<Func<Veterinario, VeterinarioRespuesta>> Proyeccion =
         v => new(v.Id, v.UserId, v.Usuario.Username, v.Usuario.Email, v.Usuario.Nombre, v.Usuario.Apellido, v.Matricula);

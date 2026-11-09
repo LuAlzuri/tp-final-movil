@@ -11,7 +11,7 @@ namespace turnero_peluqueria.Controllers;
 [ApiController]
 [Route("api/autenticacion")]
 [Authorize]
-public sealed class AutenticacionController(AutenticacionService autenticacion) : ControllerBase
+public class AutenticacionController(AutenticacionService autenticacion) : ControllerBase
 {
     [HttpPost("iniciar-sesion")]
     [AllowAnonymous]

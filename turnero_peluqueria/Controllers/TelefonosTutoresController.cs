@@ -11,7 +11,7 @@ namespace turnero_peluqueria.Controllers;
 [ApiController]
 [Route("api/tutores/{tutorId:int}/telefonos")]
 [Authorize(Roles = Usuario.RolVeterinario)]
-public sealed class TelefonosTutoresController(AppDbContext db) : ControllerBase
+public class TelefonosTutoresController(AppDbContext db) : ControllerBase
 {
     [HttpGet("{id:int}")]
     public async Task<ActionResult<TelefonoTutorRespuesta>> ObtenerPorId(int tutorId, int id, CancellationToken ct) =>
