@@ -7,13 +7,11 @@ using turnero_peluqueria.Exceptions;
 
 namespace turnero_peluqueria.Services;
 
-public sealed class BajasPerfilesService(AppDbContext db, AuditoriaAccionesService auditoria)
+public sealed class BajasService(AppDbContext db, AuditoriaAccionesService auditoria)
 {
-    private static readonly TimeZoneInfo ZonaArgentina = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
-
     private IQueryable<CupoTurno> ReservasActivasDesdeHoy()
     {
-        var hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ZonaArgentina));
+        var hoy = FechaArgentina.Hoy;
         return db.CuposTurnos.Where(reserva => reserva.CupoDiario.FechaCupo >= hoy
             && (reserva.Turno.EstadoId == Estado.Pendiente || reserva.Turno.EstadoId == Estado.Aprobado));
     }
@@ -38,6 +36,17 @@ public sealed class BajasPerfilesService(AppDbContext db, AuditoriaAccionesServi
 
         tutor.Eliminado = true;
         auditoria.Registrar("Eliminar", nameof(Tutor), id);
+    }, ct);
+
+    public Task EliminarPerroAsync(int id, CancellationToken ct) => EjecutarBajaAsync(async () =>
+    {
+        var perro = await db.Perros.SingleOrDefaultAsync(p => p.Id == id && !p.Eliminado, ct)
+            ?? throw new ApiException("No se encontró el perro.", StatusCodes.Status404NotFound);
+        if (await ReservasActivasDesdeHoy().AnyAsync(r => r.Turno.PerroId == id, ct))
+            throw ConflictoTurnos();
+
+        perro.Eliminado = true;
+        auditoria.Registrar("Eliminar", nameof(Perro), id);
     }, ct);
 
     private async Task EjecutarBajaAsync(Func<Task> prepararBaja, CancellationToken ct)

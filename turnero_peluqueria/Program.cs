@@ -34,7 +34,7 @@ builder.Services.AddDbContext<AppDbContext>(opciones =>
 });
 
 builder.Services.AgregarAutenticacion(builder.Configuration);
-builder.Services.AddScoped<BajasPerfilesService>();
+builder.Services.AddScoped<BajasService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
