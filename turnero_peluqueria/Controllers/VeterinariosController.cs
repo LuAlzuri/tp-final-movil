@@ -7,13 +7,14 @@ using turnero_peluqueria.Data;
 using turnero_peluqueria.DTOs;
 using turnero_peluqueria.Entities;
 using turnero_peluqueria.Exceptions;
+using turnero_peluqueria.Services;
 
 namespace turnero_peluqueria.Controllers;
 
 [ApiController]
 [Route("api/veterinarios")]
 [Authorize(Roles = Usuario.RolAdministrador)]
-public class VeterinariosController(AppDbContext db) : ControllerBase
+public class VeterinariosController(AppDbContext db, AuditoriaAccionesService auditoria, BajasPerfilesService bajas) : ControllerBase
 {
     private static readonly Expression<Func<Veterinario, VeterinarioRespuesta>> Proyeccion =
         v => new(v.Id, v.UserId, v.Usuario.Username, v.Usuario.Email, v.Usuario.Nombre, v.Usuario.Apellido, v.Matricula);
@@ -41,7 +42,7 @@ public class VeterinariosController(AppDbContext db) : ControllerBase
             Matricula = datos.Matricula
         };
         db.Veterinarios.Add(veterinario);
-        await Cuentas.Guardar(db, ct);
+        await auditoria.GuardarAltaAsync(() => auditoria.Registrar("Crear", nameof(Veterinario), veterinario.Id), ct);
         return CreatedAtAction(nameof(ObtenerPorId), new { id = veterinario.Id }, Mapear(veterinario));
     }
 
@@ -54,7 +55,15 @@ public class VeterinariosController(AppDbContext db) : ControllerBase
         await VerificarMatricula(datos.Matricula, id, ct);
         Cuentas.Actualizar(veterinario.Usuario, datos);
         veterinario.Matricula = datos.Matricula;
+        auditoria.Registrar("Modificar", nameof(Veterinario), id);
         await Cuentas.Guardar(db, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken ct)
+    {
+        await bajas.EliminarVeterinarioAsync(id, ct);
         return NoContent();
     }
 

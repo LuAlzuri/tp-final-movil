@@ -5,13 +5,14 @@ using turnero_peluqueria.Data;
 using turnero_peluqueria.DTOs;
 using turnero_peluqueria.Entities;
 using turnero_peluqueria.Exceptions;
+using turnero_peluqueria.Services;
 
 namespace turnero_peluqueria.Controllers;
 
 [ApiController]
 [Route("api/tutores/{tutorId:int}/telefonos")]
 [Authorize(Roles = Usuario.RolVeterinario)]
-public class TelefonosTutoresController(AppDbContext db) : ControllerBase
+public class TelefonosTutoresController(AppDbContext db, AuditoriaAccionesService auditoria) : ControllerBase
 {
     [HttpGet("{id:int}")]
     public async Task<ActionResult<TelefonoTutorRespuesta>> ObtenerPorId(int tutorId, int id, CancellationToken ct) =>
@@ -30,7 +31,7 @@ public class TelefonosTutoresController(AppDbContext db) : ControllerBase
         await VerificarNumero(tutorId, numero, null, ct);
         var telefono = new TelefonoTutor { TutorId = tutorId, NombreProp = datos.NombreProp.Trim(), NroTel = numero };
         db.TelefonosTutores.Add(telefono);
-        await Cuentas.Guardar(db, ct);
+        await auditoria.GuardarAltaAsync(() => auditoria.Registrar("Crear", nameof(TelefonoTutor), telefono.Id), ct);
         return CreatedAtAction(nameof(ObtenerPorId), new { tutorId, id = telefono.Id },
             new TelefonoTutorRespuesta(telefono.Id, telefono.NombreProp, telefono.NroTel));
     }
@@ -44,7 +45,19 @@ public class TelefonosTutoresController(AppDbContext db) : ControllerBase
         await VerificarNumero(tutorId, numero, id, ct);
         telefono.NombreProp = datos.NombreProp.Trim();
         telefono.NroTel = numero;
+        auditoria.Registrar("Modificar", nameof(TelefonoTutor), id);
         await Cuentas.Guardar(db, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Eliminar(int tutorId, int id, CancellationToken ct)
+    {
+        var telefono = await db.TelefonosTutores.SingleOrDefaultAsync(
+            t => t.TutorId == tutorId && t.Id == id && !t.Tutor.Eliminado, ct) ?? throw NoEncontrado();
+        db.TelefonosTutores.Remove(telefono);
+        auditoria.Registrar("Eliminar", nameof(TelefonoTutor), id);
+        await db.SaveChangesAsync(ct);
         return NoContent();
     }
 
