@@ -17,13 +17,15 @@
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.1" />
     <PackageReference Include="QuestPDF" Version="2026.9.1" />
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Remove="logs/**;wwwroot/upload/**" />
-    <None Remove="logs/**;wwwroot/upload/**" />
+    <Content Remove="logs/**;wwwroot/upload/**;wwwroot/uploads/**" />
+    <None Remove="logs/**;wwwroot/upload/**;wwwroot/uploads/**" />
   </ItemGroup>
 
 </Project>

@@ -256,6 +256,55 @@ namespace turnero_peluqueria.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("turnero_peluqueria.Entities.Imagen", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id_imagen");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("NombreArchivo")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("nombre_archivo");
+
+                    b.Property<int>("PerroId")
+                        .HasColumnType("int")
+                        .HasColumnName("perro_id");
+
+                    b.Property<string>("RutaRelativa")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("ruta_relativa");
+
+                    b.Property<long>("TamanoBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tamano_bytes");
+
+                    b.Property<string>("TipoContenido")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("tipo_contenido");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PerroId")
+                        .IsUnique();
+
+                    b.ToTable("Imagenes", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Imagenes_Tamano", "[tamano_bytes] > 0");
+                        });
+                });
+
             modelBuilder.Entity("turnero_peluqueria.Entities.Patologia", b =>
                 {
                     b.Property<int>("Id")
@@ -831,6 +880,17 @@ namespace turnero_peluqueria.Data.Migrations
                     b.Navigation("Turno");
                 });
 
+            modelBuilder.Entity("turnero_peluqueria.Entities.Imagen", b =>
+                {
+                    b.HasOne("turnero_peluqueria.Entities.Perro", "Perro")
+                        .WithOne("Imagen")
+                        .HasForeignKey("turnero_peluqueria.Entities.Imagen", "PerroId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Perro");
+                });
+
             modelBuilder.Entity("turnero_peluqueria.Entities.Perro", b =>
                 {
                     b.HasOne("turnero_peluqueria.Entities.GrupoEtario", "GrupoEtario")
@@ -990,6 +1050,11 @@ namespace turnero_peluqueria.Data.Migrations
                     b.Navigation("Tutor");
 
                     b.Navigation("Veterinario");
+                });
+
+            modelBuilder.Entity("turnero_peluqueria.Entities.Perro", b =>
+                {
+                    b.Navigation("Imagen");
                 });
 #pragma warning restore 612, 618
         }

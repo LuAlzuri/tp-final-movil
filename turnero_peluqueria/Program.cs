@@ -38,6 +38,8 @@ builder.Services.AddScoped<BajasService>();
 builder.Services.AddScoped<TurnosService>();
 builder.Services.AddScoped<VetosService>();
 builder.Services.AddScoped<ReportesService>();
+builder.Services.AddScoped<ImagenPerroService>();
+builder.Services.AddSingleton<IAlmacenImagenes, AlmacenImagenes>();
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -104,6 +106,19 @@ if (crearAdministrador)
 _ = app.Services.GetRequiredService<JwtSettings>();
 app.UseMiddleware<MiddlewareErrores>();
 app.UseHttpsRedirection();
+
+var raizWeb = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+app.Environment.WebRootPath = raizWeb;
+var carpetaImagenes = Path.Combine(raizWeb, "uploads");
+Directory.CreateDirectory(carpetaImagenes);
+var archivosImagenes = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(carpetaImagenes);
+app.Lifetime.ApplicationStopped.Register(archivosImagenes.Dispose);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = archivosImagenes,
+    RequestPath = "/uploads",
+    OnPrepareResponse = contexto => contexto.Context.Response.Headers["X-Content-Type-Options"] = "nosniff"
+});
 
 if (app.Environment.IsDevelopment())
 {

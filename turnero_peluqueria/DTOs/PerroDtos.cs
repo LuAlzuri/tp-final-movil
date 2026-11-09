@@ -42,4 +42,4 @@ public sealed record AsignarPatologiaSolicitud : DatosPerroPatologiaSolicitud
 public sealed record PerroPatologiaRespuesta(int PatologiaId, string Descripcion, bool Controlado, string? Observacion);
 
 public sealed record PerroRespuesta(int Id, int TutorId, string Nombre, DateOnly FechaNacimiento, bool Reactivo,
-    bool CalVacCom, int GrupoEtarioId, int TamanioId, List<PerroPatologiaRespuesta> Patologias);
+    bool CalVacCom, int GrupoEtarioId, int TamanioId, List<PerroPatologiaRespuesta> Patologias, string? ImagenUrl);

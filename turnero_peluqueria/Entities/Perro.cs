@@ -14,4 +14,5 @@ public sealed class Perro
     public Tutor Tutor { get; set; } = null!;
     public GrupoEtario GrupoEtario { get; set; } = null!;
     public Tamanio Tamanio { get; set; } = null!;
+    public Imagen? Imagen { get; set; }
 }
