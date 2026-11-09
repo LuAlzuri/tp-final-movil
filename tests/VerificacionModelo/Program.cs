@@ -24,9 +24,13 @@ IEntityType Entidad<T>() => modelo.FindEntityType(typeof(T))
 bool IndiceUnico<T>(params string[] propiedades) => Entidad<T>().GetIndexes().Any(indice =>
     indice.IsUnique && indice.Properties.Select(p => p.Name).SequenceEqual(propiedades));
 
-Verificar(modelo.GetEntityTypes().Count() == 19, "Deben existir 19 entidades, sin tablas implicitas.");
+Verificar(modelo.GetEntityTypes().Count() == 20, "Deben existir 20 entidades, sin tablas implicitas.");
 Verificar(!modelo.GetEntityTypes().SelectMany(e => e.GetProperties()).Any(p => p.IsShadowProperty()), "No debe haber columnas implicitas.");
-Verificar(modelo.GetEntityTypes().SelectMany(e => e.GetForeignKeys()).All(fk => fk.DeleteBehavior == DeleteBehavior.NoAction), "Ninguna relacion debe borrar en cascada.");
+Verificar(modelo.GetEntityTypes().SelectMany(e => e.GetForeignKeys())
+    .All(fk => fk.DeleteBehavior is DeleteBehavior.NoAction or DeleteBehavior.Restrict), "Ninguna relacion debe borrar en cascada.");
+var relacionImagen = Entidad<Imagen>().GetForeignKeys().Single();
+Verificar(relacionImagen.IsUnique && relacionImagen.IsRequired && relacionImagen.DeleteBehavior == DeleteBehavior.Restrict,
+    "Cada perro puede tener una sola imagen y su borrado referencial es restringido.");
 Verificar(modelo.GetEntityTypes().All(e => !e.GetDeclaredQueryFilters().Any()), "Los historiales no deben ocultarse por filtros globales.");
 
 Verificar(IndiceUnico<Usuario>(nameof(Usuario.Email)), "El email debe ser unico.");
@@ -80,7 +84,7 @@ Verificar(Entidad<Estado>().GetCheckConstraints().Any(c => c.Sql == "[id_estado]
 Verificar(Entidad<Turno>().GetCheckConstraints().Any(c => c.Sql == "[estado_id] NOT IN (2, 5, 6) OR [veterinario_id] IS NOT NULL"), "Un turno aprobado o atendido requiere veterinario.");
 
 var ensamblado = db.GetService<IMigrationsAssembly>();
-Verificar(ensamblado.Migrations.Count == 20, "Se espera una migracion por entidad y otra para semillas.");
+Verificar(ensamblado.Migrations.Count == 21, "Se espera una migracion por entidad y otra para semillas.");
 var tablasCreadas = new HashSet<string>();
 var filasSemilla = 0;
 foreach (var migracionInfo in ensamblado.Migrations.OrderBy(x => x.Key))
@@ -101,7 +105,7 @@ foreach (var migracionInfo in ensamblado.Migrations.OrderBy(x => x.Key))
     filasSemilla += migracion.UpOperations.OfType<InsertDataOperation>().Sum(op => op.Values.GetLength(0));
     Verificar(!migracion.UpOperations.Any(op => op is DropTableOperation or DropColumnOperation or AlterColumnOperation), "La cadena inicial no debe contener cambios destructivos ni reconstrucciones.");
 }
-Verificar(tablasCreadas.Count == 19 && filasSemilla == 12, "Deben crearse 19 tablas e insertarse 12 filas iniciales.");
+Verificar(tablasCreadas.Count == 20 && filasSemilla == 12, "Deben crearse 20 tablas e insertarse 12 filas iniciales.");
 
 var estados = Entidad<Estado>().GetSeedData().OrderBy(x => x[nameof(Estado.Id)]).ToArray();
 Verificar(estados.Select(x => (int)x[nameof(Estado.Id)]!).SequenceEqual(Enumerable.Range(1, 6)), "Los estados deben conservar los seis identificadores fijos.");

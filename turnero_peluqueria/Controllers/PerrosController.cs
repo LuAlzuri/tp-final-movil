@@ -16,7 +16,8 @@ namespace turnero_peluqueria.Controllers;
 [ApiController]
 [Route("api/perros")]
 [Authorize(Roles = Usuario.RolVeterinario + "," + Usuario.RolTutor)]
-public class PerrosController(AppDbContext db, AuditoriaAccionesService auditoria, BajasService bajas) : ControllerBase
+public class PerrosController(AppDbContext db, AuditoriaAccionesService auditoria, BajasService bajas,
+    ImagenPerroService imagenes) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<PerroRespuesta>>> Listar(
@@ -55,7 +56,7 @@ public class PerrosController(AppDbContext db, AuditoriaAccionesService auditori
 
             return CreatedAtAction(nameof(ObtenerPorId), new { id = perro.Id },
                 new PerroRespuesta(perro.Id, perro.TutorId, perro.Nombre, perro.FechaNacimiento, perro.Reactivo,
-                    perro.CalVacCom, perro.GrupoEtarioId, perro.TamanioId, []));
+                    perro.CalVacCom, perro.GrupoEtarioId, perro.TamanioId, [], null));
         }
         catch (Exception ex) when (ex.GetBaseException() is SqlException { Number: 1205 or 1222 or 3960 })
         {
@@ -90,6 +91,22 @@ public class PerrosController(AppDbContext db, AuditoriaAccionesService auditori
         return NoContent();
     }
 
+    [HttpPost("{id:int}/imagen")]
+    [Authorize(Roles = Usuario.RolVeterinario)]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ImagenPerroService.MaxPeticion)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ImagenPerroService.MaxPeticion)]
+    public async Task<ActionResult<ImagenResponse>> SubirImagen(int id, [FromForm] ImagenSubidaRequest datos, CancellationToken ct) =>
+        Ok(await imagenes.GuardarAsync(id, datos.Archivo, ct));
+
+    [HttpDelete("{id:int}/imagen")]
+    [Authorize(Roles = Usuario.RolVeterinario)]
+    public async Task<IActionResult> EliminarImagen(int id, CancellationToken ct)
+    {
+        await imagenes.EliminarAsync(id, ct);
+        return NoContent();
+    }
+
     private IQueryable<Perro> PerrosVisibles()
     {
         var perros = db.Perros.AsNoTracking().Where(p => !p.Eliminado);
@@ -106,7 +123,7 @@ public class PerrosController(AppDbContext db, AuditoriaAccionesService auditori
             p.GrupoEtarioId, p.TamanioId, db.PerrosPatologias.Where(r => r.PerroId == p.Id)
                 .OrderBy(r => r.PatologiaId)
                 .Select(r => new PerroPatologiaRespuesta(r.PatologiaId, r.Patologia.Descripcion, r.Controlado, r.Observacion))
-                .ToList()));
+                .ToList(), p.Imagen == null ? null : p.Imagen.RutaRelativa));
 
     private async Task ValidarDatosAsync(DatosPerroSolicitud datos, CancellationToken ct)
     {
