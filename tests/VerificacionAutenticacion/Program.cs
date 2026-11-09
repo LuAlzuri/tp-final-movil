@@ -150,6 +150,7 @@ internal static partial class VerificacionAutenticacion
         await VerificarVetosAsync(fabrica, cliente, admin.Token);
         await VerificarReportesAsync(fabrica, cliente, admin.Token);
         await VerificarImagenesAsync(fabrica, cliente, admin.Token);
+        await VerificarConsultaDeErroresAsync(fabrica, cliente, admin.Token);
         Console.WriteLine($"API verificada: {verificaciones} comprobaciones con una base temporal en memoria.");
     }
 
