@@ -37,6 +37,8 @@ builder.Services.AgregarAutenticacion(builder.Configuration);
 builder.Services.AddScoped<BajasService>();
 builder.Services.AddScoped<TurnosService>();
 builder.Services.AddScoped<VetosService>();
+builder.Services.AddScoped<ReportesService>();
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
