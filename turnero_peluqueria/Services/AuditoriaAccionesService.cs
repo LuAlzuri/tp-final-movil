@@ -16,7 +16,10 @@ public sealed class AuditoriaAccionesService(AppDbContext db, IHttpContextAccess
         await transaccion.CommitAsync(ct);
     }
 
-    public void Registrar(string accion, string entidad, int entidadId, Usuario? autor = null)
+    public void Registrar(string accion, string entidad, int entidadId, Usuario? autor = null) =>
+        Registrar(accion, entidad, entidadId.ToString(CultureInfo.InvariantCulture), autor);
+
+    public void Registrar(string accion, string entidad, string entidadId, Usuario? autor = null)
     {
         var contexto = contextoHttp.HttpContext;
         db.AuditoriaAcciones.Add(new AuditoriaAccion
@@ -25,7 +28,7 @@ public sealed class AuditoriaAccionesService(AppDbContext db, IHttpContextAccess
             UsuarioEmail = autor?.Email ?? contexto?.User.FindFirst("email")?.Value,
             Accion = accion,
             Entidad = entidad,
-            EntidadId = entidadId.ToString(CultureInfo.InvariantCulture),
+            EntidadId = entidadId,
             Ip = contexto?.Connection.RemoteIpAddress?.ToString()
         });
     }
