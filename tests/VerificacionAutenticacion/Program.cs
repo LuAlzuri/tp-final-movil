@@ -138,6 +138,7 @@ internal static partial class VerificacionAutenticacion
 
         await VerificarLimiteAsync();
         await VerificarVeterinariosAsync(cliente, admin.Token, vet.Token);
+        await VerificarTutoresAsync(cliente, admin.Token, vet.Token);
         Console.WriteLine($"Autenticación verificada: {verificaciones} comprobaciones con una base temporal en memoria.");
     }
 
