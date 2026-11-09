@@ -41,10 +41,56 @@ public class TurnosController(AppDbContext db, TurnosService turnos) : Controlle
     [Authorize(Roles = Usuario.RolTutor)]
     public async Task<ActionResult<TurnoRespuesta>> Solicitar(SolicitarTurnoSolicitud datos, CancellationToken ct)
     {
-        var usuarioId = User.ObtenerId() ?? throw new ApiException("La sesión no es válida.", StatusCodes.Status401Unauthorized);
-        var turnoId = await turnos.SolicitarAsync(usuarioId, datos, ct);
+        var turnoId = await turnos.SolicitarAsync(ExigirUsuarioId(), datos, ct);
         return CreatedAtAction(nameof(ObtenerPorId), new { id = turnoId }, await BuscarRespuestaAsync(turnoId, ct));
     }
+
+    [HttpPut("{id:int}/servicios")]
+    [Authorize(Roles = Usuario.RolTutor)]
+    public async Task<IActionResult> ModificarServicios(int id, ServiciosTurnoSolicitud datos, CancellationToken ct)
+    {
+        await turnos.ModificarServiciosAsync(id, ExigirUsuarioId(), datos, ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/aprobar")]
+    [Authorize(Roles = Usuario.RolVeterinario)]
+    public async Task<IActionResult> Aprobar(int id, AprobarTurnoSolicitud datos, CancellationToken ct)
+    {
+        await turnos.AprobarAsync(id, ExigirUsuarioId(), datos, ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/rechazar")]
+    [Authorize(Roles = Usuario.RolVeterinario)]
+    public async Task<IActionResult> Rechazar(int id, CancellationToken ct)
+    {
+        await turnos.RechazarAsync(id, ExigirUsuarioId(), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/cancelar")]
+    public async Task<IActionResult> Cancelar(int id, CancellationToken ct)
+    {
+        var usuarioId = ExigirUsuarioId();
+        if (User.IsInRole(Usuario.RolTutor))
+            await turnos.CancelarPorTutorAsync(id, usuarioId, ct);
+        else
+            await turnos.CancelarPorVeterinarioAsync(id, usuarioId, ct);
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/completar")]
+    [Authorize(Roles = Usuario.RolVeterinario)]
+    public async Task<IActionResult> Completar(int id, CompletarTurnoSolicitud datos, CancellationToken ct)
+    {
+        await turnos.CompletarAsync(id, ExigirUsuarioId(), datos, ct);
+        return NoContent();
+    }
+
+    private int ExigirUsuarioId() => User.ObtenerId()
+        ?? throw new ApiException("La sesión no es válida.", StatusCodes.Status401Unauthorized);
 
     private async Task<TurnoRespuesta> BuscarRespuestaAsync(int id, CancellationToken ct) =>
         await Proyectar(ReservasVisibles().Where(r => r.TurnoId == id)).SingleOrDefaultAsync(ct)
@@ -63,7 +109,7 @@ public class TurnosController(AppDbContext db, TurnosService turnos) : Controlle
 
     private IQueryable<TurnoRespuesta> Proyectar(IQueryable<CupoTurno> reservas) =>
         reservas.AsSplitQuery().Select(r => new TurnoRespuesta(r.TurnoId, r.Turno.PerroId, r.Turno.Perro.Nombre,
-            r.CupoId, r.CupoDiario.FechaCupo, r.Cantidad, r.Turno.EstadoId, r.Turno.Estado.Descripcion, r.Turno.VeterinarioId,
+            r.CupoId, r.CupoDiario.FechaCupo, r.Cantidad, r.Observacion, r.Turno.EstadoId, r.Turno.Estado.Descripcion, r.Turno.VeterinarioId,
             r.Turno.Observaciones, r.Turno.FechaSolicitud, r.Turno.FechaEstado,
             db.ServiciosPorTurno.Where(s => s.TurnoId == r.TurnoId).OrderBy(s => s.ServicioId)
                 .Select(s => new ServicioTurnoRespuesta(s.ServicioId, s.Servicio.Descripcion, s.Completado)).ToList(),

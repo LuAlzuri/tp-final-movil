@@ -15,9 +15,6 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
     public async Task<int> SolicitarAsync(int usuarioId, SolicitarTurnoSolicitud datos, CancellationToken ct)
     {
         var servicios = datos.ServicioIds;
-        if (servicios.Any(id => id <= 0) || servicios.Distinct().Count() != servicios.Count)
-            throw new ApiException("Los servicios indicados deben ser válidos y distintos.");
-
         try
         {
             await using var transaccion = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
@@ -42,8 +39,7 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
             if (cupo.NroCupoDis - ocupados < CuposPorSolicitud)
                 throw new ApiException("No hay cupos disponibles para ese día.", StatusCodes.Status409Conflict);
 
-            if (await db.Servicios.CountAsync(s => servicios.Contains(s.Id), ct) != servicios.Count)
-                throw new ApiException("Uno o más de los servicios indicados no existen.");
+            await ValidarServiciosAsync(servicios, ct);
 
             var ahora = DateTime.UtcNow;
             var turno = new Turno
@@ -63,6 +59,172 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
             throw new ApiException("Hubo una modificación simultánea. Consultá la disponibilidad y volvé a intentar.", StatusCodes.Status409Conflict);
         }
     }
+
+    public Task ModificarServiciosAsync(int id, int usuarioId, ServiciosTurnoSolicitud datos, CancellationToken ct) =>
+        EjecutarCambioAsync(async () =>
+        {
+            var reserva = await BuscarReservaAsync(id, usuarioId, ct);
+            ExigirEstado(reserva.Turno, Estado.Pendiente);
+            await ValidarServiciosAsync(datos.ServicioIds, ct);
+
+            var actuales = await db.ServiciosPorTurno.Where(s => s.TurnoId == id).ToListAsync(ct);
+            db.ServiciosPorTurno.RemoveRange(actuales.Where(s => !datos.ServicioIds.Contains(s.ServicioId)));
+            db.ServiciosPorTurno.AddRange(datos.ServicioIds.Except(actuales.Select(s => s.ServicioId))
+                .Select(servicioId => new ServicioPorTurno { TurnoId = id, ServicioId = servicioId }));
+            auditoria.Registrar("ModificarServicios", nameof(Turno), id);
+        }, ct);
+
+    public Task AprobarAsync(int id, int usuarioId, AprobarTurnoSolicitud datos, CancellationToken ct) =>
+        EjecutarCambioAsync(async () =>
+        {
+            var veterinarioId = await ExigirVeterinarioAsync(usuarioId, ct);
+            var reserva = await BuscarReservaAsync(id, null, ct);
+            ExigirEstado(reserva.Turno, Estado.Pendiente);
+
+            var cantidad = datos.Cantidad ?? reserva.Cantidad;
+            var ocupados = await ReservasDeCupo.ContarOcupadosAsync(db, reserva.CupoId, ct);
+            var ocupadosPorOtrosTurnos = ocupados - reserva.Cantidad;
+            if (cantidad > reserva.CupoDiario.NroCupoDis - ocupadosPorOtrosTurnos)
+                throw new ApiException("No hay cupos suficientes para aprobar el turno con esa cantidad.", StatusCodes.Status409Conflict);
+
+            reserva.Cantidad = cantidad;
+            reserva.Observacion = LimpiarTexto(datos.ObservacionCupo);
+            reserva.Turno.VeterinarioId = veterinarioId;
+            CambiarEstado(reserva.Turno, Estado.Aprobado, "Aprobar");
+        }, ct);
+
+    public Task RechazarAsync(int id, int usuarioId, CancellationToken ct) =>
+        CambiarEstadoVeterinarioAsync(id, usuarioId, Estado.Pendiente, Estado.Rechazado, "Rechazar", ct);
+
+    public Task CancelarPorVeterinarioAsync(int id, int usuarioId, CancellationToken ct) =>
+        CambiarEstadoVeterinarioAsync(id, usuarioId, Estado.Aprobado, Estado.CanceladoPorVeterinario, "CancelarPorVeterinario", ct);
+
+    public Task CancelarPorTutorAsync(int id, int usuarioId, CancellationToken ct) =>
+        EjecutarCambioAsync(async () =>
+        {
+            var reserva = await BuscarReservaAsync(id, usuarioId, ct);
+            if (reserva.Turno.EstadoId is not (Estado.Pendiente or Estado.Aprobado))
+                throw EstadoNoPermitido();
+
+            CambiarEstado(reserva.Turno, Estado.CanceladoPorTutor, "CancelarPorTutor");
+        }, ct);
+
+    public Task CompletarAsync(int id, int usuarioId, CompletarTurnoSolicitud datos, CancellationToken ct) =>
+        EjecutarCambioAsync(async () =>
+        {
+            await ExigirVeterinarioAsync(usuarioId, ct);
+            var reserva = await BuscarReservaAsync(id, null, ct);
+            ExigirEstado(reserva.Turno, Estado.Aprobado);
+            if (reserva.CupoDiario.FechaCupo > FechaArgentina.Hoy)
+                throw new ApiException("No se puede completar el turno antes de su fecha.", StatusCodes.Status409Conflict);
+
+            var servicios = await db.ServiciosPorTurno.Where(s => s.TurnoId == id).ToListAsync(ct);
+            var completados = datos.ServicioIdsCompletados.ToHashSet();
+            if (completados.Count != datos.ServicioIdsCompletados.Count
+                || !completados.IsSubsetOf(servicios.Select(s => s.ServicioId)))
+                throw new ApiException("Indicá servicios distintos que pertenezcan al turno.");
+
+            await RegistrarTratamientosAsync(id, datos.Tratamientos, ct);
+            foreach (var servicio in servicios)
+                servicio.Completado = completados.Contains(servicio.ServicioId);
+
+            reserva.Turno.Observaciones = LimpiarTexto(datos.Observaciones);
+            CambiarEstado(reserva.Turno, Estado.Completado, "Completar");
+        }, ct);
+
+    private Task CambiarEstadoVeterinarioAsync(int id, int usuarioId, int estadoInicial,
+        int estadoFinal, string accion, CancellationToken ct) =>
+        EjecutarCambioAsync(async () =>
+        {
+            await ExigirVeterinarioAsync(usuarioId, ct);
+            var reserva = await BuscarReservaAsync(id, null, ct);
+            ExigirEstado(reserva.Turno, estadoInicial);
+            CambiarEstado(reserva.Turno, estadoFinal, accion);
+        }, ct);
+
+    private async Task RegistrarTratamientosAsync(int turnoId, List<TratamientoRealizadoSolicitud?> datos, CancellationToken ct)
+    {
+        if (datos.Count == 0)
+            return;
+        if (datos.Any(t => t is null))
+            throw new ApiException("Cada tratamiento debe tener un identificador válido.");
+
+        var ids = datos.Select(t => t!.TratamientoId).ToList();
+        if (ids.Distinct().Count() != ids.Count || await db.Tratamientos.CountAsync(t => ids.Contains(t.Id), ct) != ids.Count)
+            throw new ApiException("Los tratamientos indicados deben existir y ser distintos.");
+
+        var actuales = await db.TratamientosPorTurno.Where(t => t.TurnoId == turnoId).ToDictionaryAsync(t => t.TratamientoId, ct);
+        foreach (var dato in datos)
+        {
+            if (!actuales.TryGetValue(dato!.TratamientoId, out var tratamiento))
+            {
+                tratamiento = new TratamientoPorTurno { TurnoId = turnoId, TratamientoId = dato.TratamientoId };
+                db.TratamientosPorTurno.Add(tratamiento);
+            }
+            tratamiento.Razon = LimpiarTexto(dato.Razon);
+        }
+    }
+
+    private async Task ValidarServiciosAsync(List<int> servicios, CancellationToken ct)
+    {
+        if (servicios.Count is < 1 or > ServiciosTurnoSolicitud.MaximoServicios)
+            throw new ApiException("Elegí entre 1 y 10 servicios.");
+        if (servicios.Any(id => id <= 0) || servicios.Distinct().Count() != servicios.Count)
+            throw new ApiException("Los servicios indicados deben ser válidos y distintos.");
+        if (await db.Servicios.CountAsync(s => servicios.Contains(s.Id), ct) != servicios.Count)
+            throw new ApiException("Uno o más de los servicios indicados no existen.");
+    }
+
+    private async Task<CupoTurno> BuscarReservaAsync(int id, int? usuarioTutorId, CancellationToken ct)
+    {
+        var reservas = db.CuposTurnos.Include(r => r.Turno).Include(r => r.CupoDiario)
+            .Where(r => r.TurnoId == id);
+        if (usuarioTutorId.HasValue)
+            reservas = reservas.Where(r => r.Turno.Perro.Tutor.UserId == usuarioTutorId.Value && !r.Turno.Perro.Tutor.Eliminado);
+
+        return await reservas.SingleOrDefaultAsync(ct)
+            ?? throw new ApiException("No se encontró el turno.", StatusCodes.Status404NotFound);
+    }
+
+    private async Task<int> ExigirVeterinarioAsync(int usuarioId, CancellationToken ct) =>
+        await db.Veterinarios.Where(v => v.UserId == usuarioId && !v.Eliminado)
+            .Select(v => (int?)v.Id).SingleOrDefaultAsync(ct)
+        ?? throw new ApiException("No se encontró un perfil veterinario activo.", StatusCodes.Status403Forbidden);
+
+    private async Task EjecutarCambioAsync(Func<Task> preparar, CancellationToken ct)
+    {
+        try
+        {
+            await using var transaccion = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            await preparar();
+            await db.SaveChangesAsync(ct);
+            await transaccion.CommitAsync(ct);
+        }
+        catch (Exception ex) when (ex.GetBaseException() is SqlException { Number: 1205 or 1222 or 3960 })
+        {
+            throw new ApiException("Hubo una modificación simultánea. Consultá el turno y volvé a intentar.", StatusCodes.Status409Conflict);
+        }
+    }
+
+    private void CambiarEstado(Turno turno, int estado, string accion)
+    {
+        turno.EstadoId = estado;
+        var ahora = DateTime.UtcNow;
+        if (ahora > turno.FechaEstado)
+            turno.FechaEstado = ahora;
+        auditoria.Registrar(accion, nameof(Turno), turno.Id);
+    }
+
+    private static void ExigirEstado(Turno turno, int estado)
+    {
+        if (turno.EstadoId != estado)
+            throw EstadoNoPermitido();
+    }
+
+    private static ApiException EstadoNoPermitido() =>
+        new("El estado actual del turno no permite esta operación.", StatusCodes.Status409Conflict);
+
+    private static string? LimpiarTexto(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
 
     private async Task ExigirTutorSinVetoAsync(int tutorId, CancellationToken ct)
     {
