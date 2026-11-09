@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerificacionModelo", "tests\VerificacionModelo\VerificacionModelo.csproj", "{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerificacionAutenticacion", "tests\VerificacionAutenticacion\VerificacionAutenticacion.csproj", "{3301FD58-054B-4975-8713-B5D11FC7B7CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,11 +45,24 @@ Global
 		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Release|x64.Build.0 = Release|Any CPU
 		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Release|x86.ActiveCfg = Release|Any CPU
 		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D}.Release|x86.Build.0 = Release|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Debug|x64.Build.0 = Debug|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Debug|x86.Build.0 = Debug|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Release|x64.ActiveCfg = Release|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Release|x64.Build.0 = Release|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Release|x86.ActiveCfg = Release|Any CPU
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{70AA7E1C-1DC5-4303-9ABA-CB240A79811D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{3301FD58-054B-4975-8713-B5D11FC7B7CA} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
