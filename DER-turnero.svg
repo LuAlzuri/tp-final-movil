@@ -1,0 +1,614 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2210" height="1620" viewBox="0 0 2210 1620" role="img" aria-labelledby="titulo descripcion">
+  <title id="titulo">Diagrama entidad-relación del turnero de peluquería canina</title>
+  <desc id="descripcion">Diagrama entidad-relación de SQL Server.</desc>
+  <style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#192831}.h{font-size:29px;font-weight:700}.sub{font-size:15px;fill:#51616b}.nombre{font-size:15px;font-weight:700}.campo{font-size:12.5px}.pk{font-weight:700}.tipo{font-size:11.5px;fill:#495a64}.clave{font-size:9px;font-weight:700;fill:#2f4656}.marco{fill:#fff;stroke:#2b3942;stroke-width:1.2}.cab{fill:#f1f3f4}.cab.nueva{fill:#dceef5}.alterno{fill:#f7f9fa}.division{fill:none;stroke:#b3bec5;stroke-width:1}.conexion{fill:none;stroke:#566671;stroke-width:1.35;stroke-linejoin:round}.rel{font-size:10.5px;font-weight:700}.nota rect{fill:#f6f8f9;stroke:#c5cfd5}.nt{font-size:15px;font-weight:700}.nl{font-size:13px;fill:#344956}
+</style>
+  <rect width="2210" height="1620" fill="white" />
+  <text x="45" y="57" class="h" text-anchor="start">Turnero de peluquería canina</text>
+  <text x="45" y="83" class="sub" text-anchor="start">Diagrama entidad-relación · SQL Server</text>
+  <line x1="45" y1="98" x2="2170" y2="98" stroke="#c5cfd5" />
+  <g id="relaciones">
+    <g>
+      <polyline class="conexion" points="700,247 440,247 440,430" />
+    </g>
+    <g>
+      <polyline class="conexion" points="850,318 850,430" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1010,275 1485,275 1485,240 1530,240" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1010,474 1090,474 1090,218 1110,218" />
+    </g>
+    <g>
+      <polyline class="conexion" points="700,502 644,502 644,738 595,738" />
+    </g>
+    <g>
+      <polyline class="conexion" points="440,556 440,690" />
+    </g>
+    <g>
+      <polyline class="conexion" points="850,532 850,690" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1120,504 1053,504 1053,723 1010,723" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1665,536 1665,577 1077,577 1077,756 1010,756" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1010,807 1110,807" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1010,891 1443,891 1443,822 1480,822" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1860,809 1790,809" />
+    </g>
+    <g>
+      <polyline class="conexion" points="850,936 850,1050" />
+    </g>
+    <g>
+      <polyline class="conexion" points="285,498 245,498 245,989 651,989 651,1095 700,1095" />
+    </g>
+    <g>
+      <polyline class="conexion" points="595,1132 700,1132" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1010,1110 1110,1110" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1480,1110 1420,1110" />
+    </g>
+    <g>
+      <polyline class="conexion" points="769,1248 769,1285 440,1285 440,1335" />
+    </g>
+    <g>
+      <polyline class="conexion" points="440,1500 440,1437" />
+    </g>
+    <g>
+      <polyline class="conexion" points="925,1248 925,1285 1265,1285 1265,1335" />
+    </g>
+    <g>
+      <polyline class="conexion" points="1480,1384 1420,1384" />
+    </g>
+  </g>
+  <g id="GruposEtarios" class="tabla">
+    <rect x="1120" y="458" width="310" height="78" class="marco" />
+    <rect x="1120.5" y="458.5" width="309" height="29.5" class="cab" />
+    <path d="M1120 488H1430 M1174 488V536" class="division" />
+    <text x="1275" y="478" class="nombre" text-anchor="middle">GruposEtarios</text>
+    <text x="1147" y="504" class="clave" text-anchor="middle">PK</text>
+    <text x="1183" y="504" class="campo pk" text-anchor="start">id_grupo_etario</text>
+    <text x="1419" y="504" class="tipo" text-anchor="end">int</text>
+    <rect x="1175" y="512" width="254" height="24" class="alterno" />
+    <text x="1147" y="528" class="clave" text-anchor="middle">UQ</text>
+    <text x="1183" y="528" class="campo" text-anchor="start">grupo_descripcion</text>
+    <text x="1419" y="528" class="tipo" text-anchor="end">varchar(100)</text>
+  </g>
+  <g id="Tamanios" class="tabla">
+    <rect x="1510" y="458" width="310" height="78" class="marco" />
+    <rect x="1510.5" y="458.5" width="309" height="29.5" class="cab" />
+    <path d="M1510 488H1820 M1564 488V536" class="division" />
+    <text x="1665" y="478" class="nombre" text-anchor="middle">Tamanios</text>
+    <text x="1537" y="504" class="clave" text-anchor="middle">PK</text>
+    <text x="1573" y="504" class="campo pk" text-anchor="start">id_tamanio</text>
+    <text x="1809" y="504" class="tipo" text-anchor="end">int</text>
+    <rect x="1565" y="512" width="254" height="24" class="alterno" />
+    <text x="1537" y="528" class="clave" text-anchor="middle">UQ</text>
+    <text x="1573" y="528" class="campo" text-anchor="start">tamanio_descripcion</text>
+    <text x="1809" y="528" class="tipo" text-anchor="end">varchar(100)</text>
+  </g>
+  <g id="Patologias" class="tabla">
+    <rect x="1860" y="760" width="310" height="78" class="marco" />
+    <rect x="1860.5" y="760.5" width="309" height="29.5" class="cab" />
+    <path d="M1860 790H2170 M1914 790V838" class="division" />
+    <text x="2015" y="780" class="nombre" text-anchor="middle">Patologias</text>
+    <text x="1887" y="806" class="clave" text-anchor="middle">PK</text>
+    <text x="1923" y="806" class="campo pk" text-anchor="start">id_patologia</text>
+    <text x="2159" y="806" class="tipo" text-anchor="end">int</text>
+    <rect x="1915" y="814" width="254" height="24" class="alterno" />
+    <text x="1887" y="830" class="clave" text-anchor="middle">UQ</text>
+    <text x="1923" y="830" class="campo" text-anchor="start">patologia_descripcion</text>
+    <text x="2159" y="830" class="tipo" text-anchor="end">varchar(100)</text>
+  </g>
+  <g id="Estados" class="tabla">
+    <rect x="285" y="1080" width="310" height="78" class="marco" />
+    <rect x="285.5" y="1080.5" width="309" height="29.5" class="cab" />
+    <path d="M285 1110H595 M339 1110V1158" class="division" />
+    <text x="440" y="1100" class="nombre" text-anchor="middle">Estados</text>
+    <text x="312" y="1126" class="clave" text-anchor="middle">PK</text>
+    <text x="348" y="1126" class="campo pk" text-anchor="start">id_estado</text>
+    <text x="584" y="1126" class="tipo" text-anchor="end">int</text>
+    <rect x="340" y="1134" width="254" height="24" class="alterno" />
+    <text x="312" y="1150" class="clave" text-anchor="middle">UQ</text>
+    <text x="348" y="1150" class="campo" text-anchor="start">estado_descripcion</text>
+    <text x="584" y="1150" class="tipo" text-anchor="end">varchar(100)</text>
+  </g>
+  <g id="Tratamientos" class="tabla">
+    <rect x="285" y="1500" width="310" height="78" class="marco" />
+    <rect x="285.5" y="1500.5" width="309" height="29.5" class="cab" />
+    <path d="M285 1530H595 M339 1530V1578" class="division" />
+    <text x="440" y="1520" class="nombre" text-anchor="middle">Tratamientos</text>
+    <text x="312" y="1546" class="clave" text-anchor="middle">PK</text>
+    <text x="348" y="1546" class="campo pk" text-anchor="start">id_tratamiento</text>
+    <text x="584" y="1546" class="tipo" text-anchor="end">int</text>
+    <rect x="340" y="1554" width="254" height="24" class="alterno" />
+    <text x="312" y="1570" class="clave" text-anchor="middle">UQ</text>
+    <text x="348" y="1570" class="campo" text-anchor="start">tratamiento_descripcion</text>
+    <text x="584" y="1570" class="tipo" text-anchor="end">varchar(100)</text>
+  </g>
+  <g id="Servicios" class="tabla">
+    <rect x="1480" y="1335" width="310" height="78" class="marco" />
+    <rect x="1480.5" y="1335.5" width="309" height="29.5" class="cab" />
+    <path d="M1480 1365H1790 M1534 1365V1413" class="division" />
+    <text x="1635" y="1355" class="nombre" text-anchor="middle">Servicios</text>
+    <text x="1507" y="1381" class="clave" text-anchor="middle">PK</text>
+    <text x="1543" y="1381" class="campo pk" text-anchor="start">id_servicio</text>
+    <text x="1779" y="1381" class="tipo" text-anchor="end">int</text>
+    <rect x="1535" y="1389" width="254" height="24" class="alterno" />
+    <text x="1507" y="1405" class="clave" text-anchor="middle">UQ</text>
+    <text x="1543" y="1405" class="campo" text-anchor="start">servicio_descripcion</text>
+    <text x="1779" y="1405" class="tipo" text-anchor="end">varchar(100)</text>
+  </g>
+  <g id="Usuarios" class="tabla">
+    <rect x="700" y="120" width="310" height="198" class="marco" />
+    <rect x="700.5" y="120.5" width="309" height="29.5" class="cab" />
+    <path d="M700 150H1010 M754 150V318" class="division" />
+    <text x="855" y="140" class="nombre" text-anchor="middle">Usuarios</text>
+    <text x="727" y="166" class="clave" text-anchor="middle">PK</text>
+    <text x="763" y="166" class="campo pk" text-anchor="start">Id</text>
+    <text x="999" y="166" class="tipo" text-anchor="end">int</text>
+    <rect x="755" y="174" width="254" height="24" class="alterno" />
+    <text x="727" y="190" class="clave" text-anchor="middle">UQ</text>
+    <text x="763" y="190" class="campo" text-anchor="start">Username</text>
+    <text x="999" y="190" class="tipo" text-anchor="end">varchar(100)</text>
+    <text x="727" y="214" class="clave" text-anchor="middle">UQ</text>
+    <text x="763" y="214" class="campo" text-anchor="start">Email</text>
+    <text x="999" y="214" class="tipo" text-anchor="end">varchar(254)</text>
+    <rect x="755" y="222" width="254" height="24" class="alterno" />
+    <text x="727" y="238" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="238" class="campo" text-anchor="start">PasswordHash</text>
+    <text x="999" y="238" class="tipo" text-anchor="end">varchar(512)</text>
+    <text x="727" y="262" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="262" class="campo" text-anchor="start">Nombre</text>
+    <text x="999" y="262" class="tipo" text-anchor="end">varchar(100)</text>
+    <rect x="755" y="270" width="254" height="24" class="alterno" />
+    <text x="727" y="286" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="286" class="campo" text-anchor="start">Apellido</text>
+    <text x="999" y="286" class="tipo" text-anchor="end">varchar(100)</text>
+    <text x="727" y="310" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="310" class="campo" text-anchor="start">Rol</text>
+    <text x="999" y="310" class="tipo" text-anchor="end">varchar(20)</text>
+  </g>
+  <g id="Veterinarios" class="tabla">
+    <rect x="285" y="430" width="310" height="126" class="marco" />
+    <rect x="285.5" y="430.5" width="309" height="29.5" class="cab" />
+    <path d="M285 460H595 M339 460V556" class="division" />
+    <text x="440" y="450" class="nombre" text-anchor="middle">Veterinarios</text>
+    <text x="312" y="476" class="clave" text-anchor="middle">PK</text>
+    <text x="348" y="476" class="campo pk" text-anchor="start">id_veterinario</text>
+    <text x="584" y="476" class="tipo" text-anchor="end">int</text>
+    <rect x="340" y="484" width="254" height="24" class="alterno" />
+    <text x="312" y="500" class="clave" text-anchor="middle">FK·UQ</text>
+    <text x="348" y="500" class="campo" text-anchor="start">UserId</text>
+    <text x="584" y="500" class="tipo" text-anchor="end">int</text>
+    <text x="312" y="524" class="clave" text-anchor="middle">UQ</text>
+    <text x="348" y="524" class="campo" text-anchor="start">Matricula</text>
+    <text x="584" y="524" class="tipo" text-anchor="end">int</text>
+    <rect x="340" y="532" width="254" height="24" class="alterno" />
+    <text x="312" y="548" class="clave" text-anchor="middle">
+    </text>
+    <text x="348" y="548" class="campo" text-anchor="start">Eliminado</text>
+    <text x="584" y="548" class="tipo" text-anchor="end">bit</text>
+  </g>
+  <g id="Tutores" class="tabla">
+    <rect x="700" y="430" width="310" height="102" class="marco" />
+    <rect x="700.5" y="430.5" width="309" height="29.5" class="cab" />
+    <path d="M700 460H1010 M754 460V532" class="division" />
+    <text x="855" y="450" class="nombre" text-anchor="middle">Tutores</text>
+    <text x="727" y="476" class="clave" text-anchor="middle">PK</text>
+    <text x="763" y="476" class="campo pk" text-anchor="start">id_tutor</text>
+    <text x="999" y="476" class="tipo" text-anchor="end">int</text>
+    <rect x="755" y="484" width="254" height="24" class="alterno" />
+    <text x="727" y="500" class="clave" text-anchor="middle">FK·UQ</text>
+    <text x="763" y="500" class="campo" text-anchor="start">UserId</text>
+    <text x="999" y="500" class="tipo" text-anchor="end">int</text>
+    <text x="727" y="524" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="524" class="campo" text-anchor="start">Eliminado</text>
+    <text x="999" y="524" class="tipo" text-anchor="end">bit</text>
+  </g>
+  <g id="TelefonosTutores" class="tabla">
+    <rect x="1110" y="120" width="310" height="126" class="marco" />
+    <rect x="1110.5" y="120.5" width="309" height="29.5" class="cab" />
+    <path d="M1110 150H1420 M1164 150V246" class="division" />
+    <text x="1265" y="140" class="nombre" text-anchor="middle">TelefonosTutores</text>
+    <text x="1137" y="166" class="clave" text-anchor="middle">PK</text>
+    <text x="1173" y="166" class="campo pk" text-anchor="start">id_telefono</text>
+    <text x="1409" y="166" class="tipo" text-anchor="end">int</text>
+    <rect x="1165" y="174" width="254" height="24" class="alterno" />
+    <text x="1137" y="190" class="clave" text-anchor="middle">FK</text>
+    <text x="1173" y="190" class="campo" text-anchor="start">tutor_id</text>
+    <text x="1409" y="190" class="tipo" text-anchor="end">int</text>
+    <text x="1137" y="214" class="clave" text-anchor="middle">
+    </text>
+    <text x="1173" y="214" class="campo" text-anchor="start">nombre_prop</text>
+    <text x="1409" y="214" class="tipo" text-anchor="end">varchar(100)</text>
+    <rect x="1165" y="222" width="254" height="24" class="alterno" />
+    <text x="1137" y="238" class="clave" text-anchor="middle">
+    </text>
+    <text x="1173" y="238" class="campo" text-anchor="start">nro_tel</text>
+    <text x="1409" y="238" class="tipo" text-anchor="end">varchar(20)</text>
+  </g>
+  <g id="Vetos" class="tabla">
+    <rect x="285" y="690" width="310" height="198" class="marco" />
+    <rect x="285.5" y="690.5" width="309" height="29.5" class="cab" />
+    <path d="M285 720H595 M339 720V888" class="division" />
+    <text x="440" y="710" class="nombre" text-anchor="middle">Vetos</text>
+    <text x="312" y="736" class="clave" text-anchor="middle">PK</text>
+    <text x="348" y="736" class="campo pk" text-anchor="start">id_veto</text>
+    <text x="584" y="736" class="tipo" text-anchor="end">int</text>
+    <rect x="340" y="744" width="254" height="24" class="alterno" />
+    <text x="312" y="760" class="clave" text-anchor="middle">FK</text>
+    <text x="348" y="760" class="campo" text-anchor="start">tutor_id</text>
+    <text x="584" y="760" class="tipo" text-anchor="end">int</text>
+    <text x="312" y="784" class="clave" text-anchor="middle">FK</text>
+    <text x="348" y="784" class="campo" text-anchor="start">veterinario_id</text>
+    <text x="584" y="784" class="tipo" text-anchor="end">int ?</text>
+    <rect x="340" y="792" width="254" height="24" class="alterno" />
+    <text x="312" y="808" class="clave" text-anchor="middle">
+    </text>
+    <text x="348" y="808" class="campo" text-anchor="start">fecha_inicio</text>
+    <text x="584" y="808" class="tipo" text-anchor="end">datetime</text>
+    <text x="312" y="832" class="clave" text-anchor="middle">
+    </text>
+    <text x="348" y="832" class="campo" text-anchor="start">motivo</text>
+    <text x="584" y="832" class="tipo" text-anchor="end">varchar(500) ?</text>
+    <rect x="340" y="840" width="254" height="24" class="alterno" />
+    <text x="312" y="856" class="clave" text-anchor="middle">
+    </text>
+    <text x="348" y="856" class="campo" text-anchor="start">fecha_fin</text>
+    <text x="584" y="856" class="tipo" text-anchor="end">datetime ?</text>
+    <text x="312" y="880" class="clave" text-anchor="middle">
+    </text>
+    <text x="348" y="880" class="campo" text-anchor="start">motivo_fin_veto</text>
+    <text x="584" y="880" class="tipo" text-anchor="end">varchar(500) ?</text>
+  </g>
+  <g id="Perros" class="tabla">
+    <rect x="700" y="690" width="310" height="246" class="marco" />
+    <rect x="700.5" y="690.5" width="309" height="29.5" class="cab" />
+    <path d="M700 720H1010 M754 720V936" class="division" />
+    <text x="855" y="710" class="nombre" text-anchor="middle">Perros</text>
+    <text x="727" y="736" class="clave" text-anchor="middle">PK</text>
+    <text x="763" y="736" class="campo pk" text-anchor="start">id_perro</text>
+    <text x="999" y="736" class="tipo" text-anchor="end">int</text>
+    <rect x="755" y="744" width="254" height="24" class="alterno" />
+    <text x="727" y="760" class="clave" text-anchor="middle">FK</text>
+    <text x="763" y="760" class="campo" text-anchor="start">tutor_id</text>
+    <text x="999" y="760" class="tipo" text-anchor="end">int</text>
+    <text x="727" y="784" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="784" class="campo" text-anchor="start">nombre</text>
+    <text x="999" y="784" class="tipo" text-anchor="end">varchar(100)</text>
+    <rect x="755" y="792" width="254" height="24" class="alterno" />
+    <text x="727" y="808" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="808" class="campo" text-anchor="start">fecha_nacimiento</text>
+    <text x="999" y="808" class="tipo" text-anchor="end">date</text>
+    <text x="727" y="832" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="832" class="campo" text-anchor="start">reactivo</text>
+    <text x="999" y="832" class="tipo" text-anchor="end">bit</text>
+    <rect x="755" y="840" width="254" height="24" class="alterno" />
+    <text x="727" y="856" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="856" class="campo" text-anchor="start">cal_vac_com</text>
+    <text x="999" y="856" class="tipo" text-anchor="end">bit</text>
+    <text x="727" y="880" class="clave" text-anchor="middle">FK</text>
+    <text x="763" y="880" class="campo" text-anchor="start">grupo_etario_id</text>
+    <text x="999" y="880" class="tipo" text-anchor="end">int</text>
+    <rect x="755" y="888" width="254" height="24" class="alterno" />
+    <text x="727" y="904" class="clave" text-anchor="middle">FK</text>
+    <text x="763" y="904" class="campo" text-anchor="start">tamanio_id</text>
+    <text x="999" y="904" class="tipo" text-anchor="end">int</text>
+    <text x="727" y="928" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="928" class="campo" text-anchor="start">eliminado</text>
+    <text x="999" y="928" class="tipo" text-anchor="end">bit</text>
+  </g>
+  <g id="PerrosPatologias" class="tabla">
+    <rect x="1480" y="760" width="310" height="126" class="marco" />
+    <rect x="1480.5" y="760.5" width="309" height="29.5" class="cab" />
+    <path d="M1480 790H1790 M1534 790V886" class="division" />
+    <text x="1635" y="780" class="nombre" text-anchor="middle">PerrosPatologias</text>
+    <text x="1507" y="806" class="clave" text-anchor="middle">PK·FK</text>
+    <text x="1543" y="806" class="campo pk" text-anchor="start">perro_id</text>
+    <text x="1779" y="806" class="tipo" text-anchor="end">int</text>
+    <rect x="1535" y="814" width="254" height="24" class="alterno" />
+    <text x="1507" y="830" class="clave" text-anchor="middle">PK·FK</text>
+    <text x="1543" y="830" class="campo pk" text-anchor="start">patologia_id</text>
+    <text x="1779" y="830" class="tipo" text-anchor="end">int</text>
+    <text x="1507" y="854" class="clave" text-anchor="middle">
+    </text>
+    <text x="1543" y="854" class="campo" text-anchor="start">controlado</text>
+    <text x="1779" y="854" class="tipo" text-anchor="end">bit</text>
+    <rect x="1535" y="862" width="254" height="24" class="alterno" />
+    <text x="1507" y="878" class="clave" text-anchor="middle">
+    </text>
+    <text x="1543" y="878" class="campo" text-anchor="start">observacion</text>
+    <text x="1779" y="878" class="tipo" text-anchor="end">varchar(1000) ?</text>
+  </g>
+  <g id="CuposDiarios" class="tabla">
+    <rect x="1480" y="1050" width="310" height="102" class="marco" />
+    <rect x="1480.5" y="1050.5" width="309" height="29.5" class="cab" />
+    <path d="M1480 1080H1790 M1534 1080V1152" class="division" />
+    <text x="1635" y="1070" class="nombre" text-anchor="middle">CuposDiarios</text>
+    <text x="1507" y="1096" class="clave" text-anchor="middle">PK</text>
+    <text x="1543" y="1096" class="campo pk" text-anchor="start">id_cupo</text>
+    <text x="1779" y="1096" class="tipo" text-anchor="end">int</text>
+    <rect x="1535" y="1104" width="254" height="24" class="alterno" />
+    <text x="1507" y="1120" class="clave" text-anchor="middle">UQ</text>
+    <text x="1543" y="1120" class="campo" text-anchor="start">fecha_cupo</text>
+    <text x="1779" y="1120" class="tipo" text-anchor="end">date</text>
+    <text x="1507" y="1144" class="clave" text-anchor="middle">
+    </text>
+    <text x="1543" y="1144" class="campo" text-anchor="start">nro_cupo_dis</text>
+    <text x="1779" y="1144" class="tipo" text-anchor="end">int</text>
+  </g>
+  <g id="Turnos" class="tabla">
+    <rect x="700" y="1050" width="310" height="198" class="marco" />
+    <rect x="700.5" y="1050.5" width="309" height="29.5" class="cab" />
+    <path d="M700 1080H1010 M754 1080V1248" class="division" />
+    <text x="855" y="1070" class="nombre" text-anchor="middle">Turnos</text>
+    <text x="727" y="1096" class="clave" text-anchor="middle">PK</text>
+    <text x="763" y="1096" class="campo pk" text-anchor="start">id_turno</text>
+    <text x="999" y="1096" class="tipo" text-anchor="end">int</text>
+    <rect x="755" y="1104" width="254" height="24" class="alterno" />
+    <text x="727" y="1120" class="clave" text-anchor="middle">FK</text>
+    <text x="763" y="1120" class="campo" text-anchor="start">perro_id</text>
+    <text x="999" y="1120" class="tipo" text-anchor="end">int</text>
+    <text x="727" y="1144" class="clave" text-anchor="middle">FK</text>
+    <text x="763" y="1144" class="campo" text-anchor="start">estado_id</text>
+    <text x="999" y="1144" class="tipo" text-anchor="end">int</text>
+    <rect x="755" y="1152" width="254" height="24" class="alterno" />
+    <text x="727" y="1168" class="clave" text-anchor="middle">FK</text>
+    <text x="763" y="1168" class="campo" text-anchor="start">veterinario_id</text>
+    <text x="999" y="1168" class="tipo" text-anchor="end">int ?</text>
+    <text x="727" y="1192" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="1192" class="campo" text-anchor="start">observaciones</text>
+    <text x="999" y="1192" class="tipo" text-anchor="end">varchar(1000) ?</text>
+    <rect x="755" y="1200" width="254" height="24" class="alterno" />
+    <text x="727" y="1216" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="1216" class="campo" text-anchor="start">fecha_solicitud</text>
+    <text x="999" y="1216" class="tipo" text-anchor="end">datetime</text>
+    <text x="727" y="1240" class="clave" text-anchor="middle">
+    </text>
+    <text x="763" y="1240" class="campo" text-anchor="start">fecha_estado</text>
+    <text x="999" y="1240" class="tipo" text-anchor="end">datetime</text>
+  </g>
+  <g id="CuposTurnos" class="tabla">
+    <rect x="1110" y="1050" width="310" height="126" class="marco" />
+    <rect x="1110.5" y="1050.5" width="309" height="29.5" class="cab" />
+    <path d="M1110 1080H1420 M1164 1080V1176" class="division" />
+    <text x="1265" y="1070" class="nombre" text-anchor="middle">CuposTurnos</text>
+    <text x="1137" y="1096" class="clave" text-anchor="middle">PK·FK</text>
+    <text x="1173" y="1096" class="campo pk" text-anchor="start">cupo_id</text>
+    <text x="1409" y="1096" class="tipo" text-anchor="end">int</text>
+    <rect x="1165" y="1104" width="254" height="24" class="alterno" />
+    <text x="1137" y="1120" class="clave" text-anchor="middle">PK·FK·UQ</text>
+    <text x="1173" y="1120" class="campo pk" text-anchor="start">turno_id</text>
+    <text x="1409" y="1120" class="tipo" text-anchor="end">int</text>
+    <text x="1137" y="1144" class="clave" text-anchor="middle">
+    </text>
+    <text x="1173" y="1144" class="campo" text-anchor="start">cantidad</text>
+    <text x="1409" y="1144" class="tipo" text-anchor="end">int</text>
+    <rect x="1165" y="1152" width="254" height="24" class="alterno" />
+    <text x="1137" y="1168" class="clave" text-anchor="middle">
+    </text>
+    <text x="1173" y="1168" class="campo" text-anchor="start">observacion</text>
+    <text x="1409" y="1168" class="tipo" text-anchor="end">varchar(500) ?</text>
+  </g>
+  <g id="TratamientosPorTurno" class="tabla">
+    <rect x="285" y="1335" width="310" height="102" class="marco" />
+    <rect x="285.5" y="1335.5" width="309" height="29.5" class="cab" />
+    <path d="M285 1365H595 M339 1365V1437" class="division" />
+    <text x="440" y="1355" class="nombre" text-anchor="middle">TratamientosPorTurno</text>
+    <text x="312" y="1381" class="clave" text-anchor="middle">PK·FK</text>
+    <text x="348" y="1381" class="campo pk" text-anchor="start">turno_id</text>
+    <text x="584" y="1381" class="tipo" text-anchor="end">int</text>
+    <rect x="340" y="1389" width="254" height="24" class="alterno" />
+    <text x="312" y="1405" class="clave" text-anchor="middle">PK·FK</text>
+    <text x="348" y="1405" class="campo pk" text-anchor="start">tratamiento_id</text>
+    <text x="584" y="1405" class="tipo" text-anchor="end">int</text>
+    <text x="312" y="1429" class="clave" text-anchor="middle">
+    </text>
+    <text x="348" y="1429" class="campo" text-anchor="start">razon</text>
+    <text x="584" y="1429" class="tipo" text-anchor="end">varchar(500) ?</text>
+  </g>
+  <g id="ServiciosPorTurno" class="tabla">
+    <rect x="1110" y="1335" width="310" height="102" class="marco" />
+    <rect x="1110.5" y="1335.5" width="309" height="29.5" class="cab" />
+    <path d="M1110 1365H1420 M1164 1365V1437" class="division" />
+    <text x="1265" y="1355" class="nombre" text-anchor="middle">ServiciosPorTurno</text>
+    <text x="1137" y="1381" class="clave" text-anchor="middle">PK·FK</text>
+    <text x="1173" y="1381" class="campo pk" text-anchor="start">turno_id</text>
+    <text x="1409" y="1381" class="tipo" text-anchor="end">int</text>
+    <rect x="1165" y="1389" width="254" height="24" class="alterno" />
+    <text x="1137" y="1405" class="clave" text-anchor="middle">PK·FK</text>
+    <text x="1173" y="1405" class="campo pk" text-anchor="start">servicio_id</text>
+    <text x="1409" y="1405" class="tipo" text-anchor="end">int</text>
+    <text x="1137" y="1429" class="clave" text-anchor="middle">
+    </text>
+    <text x="1173" y="1429" class="campo" text-anchor="start">completado</text>
+    <text x="1409" y="1429" class="tipo" text-anchor="end">bit</text>
+  </g>
+  <g id="AuditoriaAcciones" class="tabla">
+    <rect x="1530" y="120" width="310" height="246" class="marco" />
+    <rect x="1530.5" y="120.5" width="309" height="29.5" class="cab nueva" />
+    <path d="M1530 150H1840 M1584 150V366" class="division" />
+    <text x="1685" y="140" class="nombre" text-anchor="middle">AuditoriaAcciones</text>
+    <text x="1557" y="166" class="clave" text-anchor="middle">PK</text>
+    <text x="1593" y="166" class="campo pk" text-anchor="start">Id</text>
+    <text x="1829" y="166" class="tipo" text-anchor="end">bigint</text>
+    <rect x="1585" y="174" width="254" height="24" class="alterno" />
+    <text x="1557" y="190" class="clave" text-anchor="middle">FK</text>
+    <text x="1593" y="190" class="campo" text-anchor="start">UsuarioId</text>
+    <text x="1829" y="190" class="tipo" text-anchor="end">int ?</text>
+    <text x="1557" y="214" class="clave" text-anchor="middle">
+    </text>
+    <text x="1593" y="214" class="campo" text-anchor="start">UsuarioEmail</text>
+    <text x="1829" y="214" class="tipo" text-anchor="end">varchar(254) ?</text>
+    <rect x="1585" y="222" width="254" height="24" class="alterno" />
+    <text x="1557" y="238" class="clave" text-anchor="middle">
+    </text>
+    <text x="1593" y="238" class="campo" text-anchor="start">Accion</text>
+    <text x="1829" y="238" class="tipo" text-anchor="end">varchar(100)</text>
+    <text x="1557" y="262" class="clave" text-anchor="middle">
+    </text>
+    <text x="1593" y="262" class="campo" text-anchor="start">Entidad</text>
+    <text x="1829" y="262" class="tipo" text-anchor="end">varchar(100)</text>
+    <rect x="1585" y="270" width="254" height="24" class="alterno" />
+    <text x="1557" y="286" class="clave" text-anchor="middle">
+    </text>
+    <text x="1593" y="286" class="campo" text-anchor="start">EntidadId</text>
+    <text x="1829" y="286" class="tipo" text-anchor="end">varchar(100) ?</text>
+    <text x="1557" y="310" class="clave" text-anchor="middle">
+    </text>
+    <text x="1593" y="310" class="campo" text-anchor="start">FechaUtc</text>
+    <text x="1829" y="310" class="tipo" text-anchor="end">datetime</text>
+    <rect x="1585" y="318" width="254" height="24" class="alterno" />
+    <text x="1557" y="334" class="clave" text-anchor="middle">
+    </text>
+    <text x="1593" y="334" class="campo" text-anchor="start">Ip</text>
+    <text x="1829" y="334" class="tipo" text-anchor="end">varchar(45) ?</text>
+    <text x="1557" y="358" class="clave" text-anchor="middle">
+    </text>
+    <text x="1593" y="358" class="campo" text-anchor="start">Observacion</text>
+    <text x="1829" y="358" class="tipo" text-anchor="end">varchar(1000) ?</text>
+  </g>
+  <g id="Imagenes" class="tabla">
+    <rect x="1110" y="690" width="310" height="174" class="marco" />
+    <rect x="1110.5" y="690.5" width="309" height="29.5" class="cab nueva" />
+    <path d="M1110 720H1420 M1164 720V864" class="division" />
+    <text x="1265" y="710" class="nombre" text-anchor="middle">Imagenes</text>
+    <text x="1137" y="736" class="clave" text-anchor="middle">PK</text>
+    <text x="1173" y="736" class="campo pk" text-anchor="start">id_imagen</text>
+    <text x="1409" y="736" class="tipo" text-anchor="end">int</text>
+    <rect x="1165" y="744" width="254" height="24" class="alterno" />
+    <text x="1137" y="760" class="clave" text-anchor="middle">FK·UQ</text>
+    <text x="1173" y="760" class="campo" text-anchor="start">perro_id</text>
+    <text x="1409" y="760" class="tipo" text-anchor="end">int</text>
+    <text x="1137" y="784" class="clave" text-anchor="middle">
+    </text>
+    <text x="1173" y="784" class="campo" text-anchor="start">nombre_archivo</text>
+    <text x="1409" y="784" class="tipo" text-anchor="end">varchar(255)</text>
+    <rect x="1165" y="792" width="254" height="24" class="alterno" />
+    <text x="1137" y="808" class="clave" text-anchor="middle">
+    </text>
+    <text x="1173" y="808" class="campo" text-anchor="start">ruta_relativa</text>
+    <text x="1409" y="808" class="tipo" text-anchor="end">varchar(500)</text>
+    <text x="1137" y="832" class="clave" text-anchor="middle">
+    </text>
+    <text x="1173" y="832" class="campo" text-anchor="start">tipo_contenido</text>
+    <text x="1409" y="832" class="tipo" text-anchor="end">varchar(100)</text>
+    <rect x="1165" y="840" width="254" height="24" class="alterno" />
+    <text x="1137" y="856" class="clave" text-anchor="middle">
+    </text>
+    <text x="1173" y="856" class="campo" text-anchor="start">tamano_bytes</text>
+    <text x="1409" y="856" class="tipo" text-anchor="end">bigint</text>
+  </g>
+  <g id="cardinalidades">
+    <rect x="675.15" y="229" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="682" y="239" class="rel" text-anchor="middle">1</text>
+    <rect x="447" y="402" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="450" y="412" class="rel" text-anchor="start">0..1</text>
+    <rect x="857" y="326" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="860" y="336" class="rel" text-anchor="start">1</text>
+    <rect x="857" y="402" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="860" y="412" class="rel" text-anchor="start">0..1</text>
+    <rect x="1011.1" y="257" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1028" y="267" class="rel" text-anchor="middle">0..1</text>
+    <rect x="1495.1" y="222" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1512" y="232" class="rel" text-anchor="middle">0..N</text>
+    <rect x="1021.15" y="456" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="1028" y="466" class="rel" text-anchor="middle">1</text>
+    <rect x="1075.1" y="200" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1092" y="210" class="rel" text-anchor="middle">0..N</text>
+    <rect x="675.15" y="484" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="682" y="494" class="rel" text-anchor="middle">1</text>
+    <rect x="596.1" y="720" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="613" y="730" class="rel" text-anchor="middle">0..N</text>
+    <rect x="447" y="564" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="450" y="574" class="rel" text-anchor="start">0..1</text>
+    <rect x="447" y="662" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="450" y="672" class="rel" text-anchor="start">0..N</text>
+    <rect x="857" y="540" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="860" y="550" class="rel" text-anchor="start">1</text>
+    <rect x="857" y="662" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="860" y="672" class="rel" text-anchor="start">0..N</text>
+    <rect x="1095.15" y="486" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="1102" y="496" class="rel" text-anchor="middle">1</text>
+    <rect x="1011.1" y="705" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1028" y="715" class="rel" text-anchor="middle">0..N</text>
+    <rect x="1672" y="544" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="1675" y="554" class="rel" text-anchor="start">1</text>
+    <rect x="1011.1" y="738" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1028" y="748" class="rel" text-anchor="middle">0..N</text>
+    <rect x="1021.15" y="789" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="1028" y="799" class="rel" text-anchor="middle">1</text>
+    <rect x="1075.1" y="789" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1092" y="799" class="rel" text-anchor="middle">0..1</text>
+    <rect x="1021.15" y="873" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="1028" y="883" class="rel" text-anchor="middle">1</text>
+    <rect x="1445.1" y="804" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1462" y="814" class="rel" text-anchor="middle">0..N</text>
+    <rect x="1835.15" y="791" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="1842" y="801" class="rel" text-anchor="middle">1</text>
+    <rect x="1791.1" y="791" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1808" y="801" class="rel" text-anchor="middle">0..N</text>
+    <rect x="857" y="944" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="860" y="954" class="rel" text-anchor="start">1</text>
+    <rect x="857" y="1022" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="860" y="1032" class="rel" text-anchor="start">0..N</text>
+    <rect x="250.1" y="480" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="267" y="490" class="rel" text-anchor="middle">0..1</text>
+    <rect x="665.1" y="1077" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="682" y="1087" class="rel" text-anchor="middle">0..N</text>
+    <rect x="606.15" y="1114" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="613" y="1124" class="rel" text-anchor="middle">1</text>
+    <rect x="665.1" y="1114" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="682" y="1124" class="rel" text-anchor="middle">0..N</text>
+    <rect x="1021.15" y="1092" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="1028" y="1102" class="rel" text-anchor="middle">1</text>
+    <rect x="1075.1" y="1092" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1092" y="1102" class="rel" text-anchor="middle">0..1</text>
+    <rect x="1455.15" y="1092" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="1462" y="1102" class="rel" text-anchor="middle">1</text>
+    <rect x="1421.1" y="1092" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1438" y="1102" class="rel" text-anchor="middle">0..N</text>
+    <rect x="776" y="1256" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="779" y="1266" class="rel" text-anchor="start">1</text>
+    <rect x="447" y="1307" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="450" y="1317" class="rel" text-anchor="start">0..N</text>
+    <rect x="447" y="1472" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="450" y="1482" class="rel" text-anchor="start">1</text>
+    <rect x="447" y="1445" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="450" y="1455" class="rel" text-anchor="start">0..N</text>
+    <rect x="932" y="1256" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="935" y="1266" class="rel" text-anchor="start">1</text>
+    <rect x="1272" y="1307" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1275" y="1317" class="rel" text-anchor="start">0..N</text>
+    <rect x="1455.15" y="1366" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="1462" y="1376" class="rel" text-anchor="middle">1</text>
+    <rect x="1421.1" y="1366" width="33.8" height="13" rx="2" fill="#fff" />
+    <text x="1438" y="1376" class="rel" text-anchor="middle">0..N</text>
+  </g>
+</svg>
