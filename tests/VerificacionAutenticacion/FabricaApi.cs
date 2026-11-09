@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +18,8 @@ using turnero_peluqueria.Data;
 
 namespace turnero_peluqueria.Verificaciones;
 
-internal sealed class FabricaApi(int limite = 100) : WebApplicationFactory<global::Program>
+internal sealed class FabricaApi(int limite = 100, string? conexionSql = null, DbCommandInterceptor? interceptor = null)
+    : WebApplicationFactory<global::Program>
 {
     public const string Emisor = "verificacion-turnero";
     public const string Audiencia = "verificacion-app";
@@ -47,6 +49,17 @@ internal sealed class FabricaApi(int limite = 100) : WebApplicationFactory<globa
             servicios.RemoveAll<IDbContextOptionsConfiguration<AppDbContext>>();
             servicios.RemoveAll<DbContextOptions<AppDbContext>>();
             servicios.RemoveAll<AppDbContext>();
+
+            if (conexionSql is not null)
+            {
+                servicios.AddDbContext<AppDbContext>(opciones =>
+                {
+                    opciones.UseSqlServer(conexionSql);
+                    if (interceptor is not null)
+                        opciones.AddInterceptors(interceptor);
+                });
+                return;
+            }
 
             // La conexión solo existe mientras se ejecuta la prueba.
             servicios.AddSingleton(_ =>

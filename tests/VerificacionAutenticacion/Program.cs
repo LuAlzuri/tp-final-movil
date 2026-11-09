@@ -25,8 +25,14 @@ internal static partial class VerificacionAutenticacion
     private const string ContrasenaNueva = "Prueba-nueva-002";
     private static int verificaciones;
 
-    public static async Task Main()
+    public static async Task Main(string[] args)
     {
+        if (args is ["--sqlserver"])
+        {
+            await VerificarSqlServerAsync();
+            return;
+        }
+
         await using var fabrica = new FabricaApi();
         using var cliente = fabrica.CrearCliente();
         var (veterinarioId, tutorId) = await PrepararCuentasAsync(fabrica);

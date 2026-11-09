@@ -94,6 +94,7 @@ public class PerrosController(AppDbContext db, AuditoriaAccionesService auditori
     [HttpPost("{id:int}/imagen")]
     [Authorize(Roles = Usuario.RolVeterinario)]
     [Consumes("multipart/form-data")]
+    [LimiteCuerpoImagen]
     [RequestSizeLimit(ImagenPerroService.MaxPeticion)]
     [RequestFormLimits(MultipartBodyLengthLimit = ImagenPerroService.MaxPeticion)]
     public async Task<ActionResult<ImagenResponse>> SubirImagen(int id, [FromForm] ImagenSubidaRequest datos, CancellationToken ct) =>
