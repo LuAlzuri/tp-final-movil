@@ -1,0 +1,102 @@
+.inicio-pantalla {
+    width: min(100%, 29rem);
+    height: calc(100dvh - env(safe-area-inset-top));
+    color: #153e42;
+    background: #fff;
+}
+
+.inicio-cabecera {
+    z-index: 1;
+    flex-shrink: 0;
+    min-height: clamp(4.2rem, 20vw, 5.5rem);
+    padding: .6rem clamp(.85rem, 5vw, 1.4rem);
+    background: #63d3d5;
+    box-shadow: 0 2px 8px rgb(21 62 66 / 12%);
+}
+
+.inicio-saludo {
+    font-size: clamp(1rem, 5.5vw, 1.45rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.inicio-menu-boton,
+.inicio-salida {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    color: #153e42;
+}
+
+.inicio-menu-boton {
+    border: 1px solid #2d797b;
+    border-radius: .55rem;
+    background: rgb(255 255 255 / 22%);
+}
+
+.inicio-menu-boton:hover,
+.inicio-menu-boton:focus-visible,
+.inicio-salida:hover,
+.inicio-salida:focus-visible {
+    color: #153e42;
+    background: rgb(255 255 255 / 48%);
+}
+
+.inicio-menu {
+    inset: 0;
+    z-index: 1;
+    overflow-y: auto;
+    padding: .65rem clamp(.9rem, 5vw, 1.4rem);
+    background: #fff;
+}
+
+.inicio-menu:not([hidden]) ~ .inicio-contenido,
+.inicio-menu:not([hidden]) ~ .inicio-pie {
+    visibility: hidden;
+}
+
+.inicio-menu li {
+    border-bottom: 1px solid #a9dddd;
+}
+
+.inicio-menu a,
+.inicio-menu button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 3.15rem;
+    padding: .55rem .45rem;
+    border: 0;
+    border-radius: .35rem .35rem 0 0;
+    background: transparent;
+    color: #153e42;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: start;
+}
+
+.inicio-menu a:hover,
+.inicio-menu a:focus-visible,
+.inicio-menu button:hover,
+.inicio-menu button:focus-visible {
+    background: #e4f5f4;
+}
+
+.inicio-cuerpo,
+.inicio-contenido {
+    min-height: 0;
+}
+
+.inicio-contenido {
+    overflow-y: auto;
+}
+
+.inicio-pie {
+    flex-shrink: 0;
+    padding: .55rem 0 max(.55rem, env(safe-area-inset-bottom));
+    background: #a1e4e4;
+    box-shadow: 0 -2px 8px rgb(21 62 66 / 8%);
+}
