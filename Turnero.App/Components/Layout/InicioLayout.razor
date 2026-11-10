@@ -1,7 +1,9 @@
 @inherits LayoutComponentBase
 @implements IDisposable
+@using Microsoft.JSInterop
 @inject SesionService Sesion
 @inject NavigationManager Navegacion
+@inject IJSRuntime Js
 
 <div class="inicio-pantalla d-flex flex-column mx-auto">
     <header class="inicio-cabecera position-relative d-flex align-items-center justify-content-between gap-2">
@@ -47,8 +49,18 @@
 
         <AuthorizeView>
             <footer class="inicio-pie d-flex justify-content-center align-items-center">
-                <button type="button" class="btn inicio-salida" aria-label="Cerrar sesión"
-                        disabled="@cerrandoSesion" @onclick="CerrarSesionAsync">
+                @if (context.User.IsInRole(Roles.Administrador) && MostrarAtajos)
+                {
+                    <button type="button" class="btn inicio-atajo flex-fill" aria-label="Volver a la pantalla anterior"
+                            @onclick="VolverAsync">
+                        <img src="images/volver.svg" width="30" height="30" alt="" />
+                    </button>
+                    <a href="inicio" class="btn inicio-atajo flex-fill" aria-label="Ir a Inicio">
+                        <img src="images/inicio.svg" width="32" height="32" alt="" />
+                    </a>
+                }
+                <button type="button" class="btn inicio-atajo @(context.User.IsInRole(Roles.Administrador) && MostrarAtajos ? "flex-fill" : "")"
+                        aria-label="Cerrar sesión" disabled="@cerrandoSesion" @onclick="CerrarSesionAsync">
                     <img src="images/salir.svg" width="32" height="32" alt="" />
                 </button>
             </footer>
@@ -59,6 +71,8 @@
 @code {
     private bool menuAbierto;
     private bool cerrandoSesion;
+    private bool MostrarAtajos => Navegacion.ToBaseRelativePath(Navegacion.Uri)
+        .StartsWith("administracion/", StringComparison.OrdinalIgnoreCase);
 
     protected override void OnInitialized() => Navegacion.LocationChanged += AlCambiarUbicacion;
 
@@ -68,12 +82,17 @@
 
     private void AlCambiarUbicacion(object? sender, LocationChangedEventArgs args)
     {
-        if (menuAbierto)
-            _ = InvokeAsync(() =>
-            {
-                CerrarMenu();
-                StateHasChanged();
-            });
+        _ = InvokeAsync(() =>
+        {
+            CerrarMenu();
+            StateHasChanged();
+        });
+    }
+
+    private async Task VolverAsync()
+    {
+        if (!await Js.InvokeAsync<bool>("veteApp.volver"))
+            Navegacion.NavigateTo("/inicio", replace: true);
     }
 
     private async Task CerrarSesionAsync()
