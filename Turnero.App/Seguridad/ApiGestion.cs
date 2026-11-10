@@ -40,12 +40,14 @@ public sealed class ApiGestion(SesionService sesion)
                     {
                         "veterinarios" => "Tu cuenta no tiene permiso para gestionar veterinarios.",
                         "auditoria" => "Tu cuenta no tiene permiso para consultar auditorías.",
+                        "turnos" => "Tu cuenta no tiene permiso para consultar turnos.",
                         _ => "Tu cuenta no tiene permiso para gestionar catálogos."
                     },
                     HttpStatusCode.NotFound => recurso switch
                     {
                         "veterinarios" => "El veterinario ya no está disponible.",
                         "auditoria" => "El informe ya no está disponible.",
+                        "turnos" => "El turno ya no está disponible.",
                         _ => "La entrada ya no está disponible."
                     },
                     HttpStatusCode.BadRequest => "Revisá los datos ingresados.",
