@@ -1,0 +1,136 @@
+@page "/administracion/catalogos/{Tipo}/nuevo"
+@page "/administracion/catalogos/{Tipo}/{Id:int}/editar"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using Microsoft.JSInterop
+@using Turnero.App.Catalogos
+@inject CatalogosApi Api
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo mb-3">@(Id.HasValue ? "Editar entrada" : "Agregar entrada")</h1>
+        @if (catalogo is { } actual)
+        {
+            <p class="fw-semibold">@actual.Titulo</p>
+            @if (error is not null)
+            {
+                <p class="alert alert-danger" role="alert">@error</p>
+            }
+            @if (datos is { } formulario)
+            {
+                <EditForm Model="formulario" class="gestion-tarjeta gestion-formulario d-grid gap-3"
+                          OnValidSubmit="GuardarAsync" novalidate>
+                    <DataAnnotationsValidator />
+                    <div>
+                        <label for="descripcion-catalogo" class="form-label fw-semibold">Descripción</label>
+                        <InputText id="descripcion-catalogo" class="form-control" maxlength="100"
+                                   placeholder="@($"Ej. {actual.Ejemplo}")" disabled="@guardando"
+                                   @bind-Value="formulario.Descripcion" />
+                        <ValidationMessage For="() => formulario.Descripcion" />
+                    </div>
+                    <div class="d-flex justify-content-end flex-wrap gap-2">
+                        <button type="button" class="btn gestion-neutro rounded-pill" disabled="@guardando"
+                                @onclick="VolverAsync">Cancelar</button>
+                        <button type="submit" class="btn gestion-principal rounded-pill fw-semibold" disabled="@guardando">
+                            @(guardando ? "Guardando…" : "Guardar")
+                        </button>
+                    </div>
+                </EditForm>
+            }
+            else if (error is null)
+            {
+                <p class="mb-0" role="status">Cargando entrada…</p>
+            }
+        }
+        else
+        {
+            <p>Catálogo no encontrado.</p>
+            <a href="administracion/catalogos" class="btn gestion-neutro rounded-pill">Volver a catálogos</a>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public string? Tipo { get; set; }
+    [Parameter] public int? Id { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private DefinicionCatalogo? catalogo;
+    private DatosCatalogo? datos;
+    private string? error;
+    private bool guardando;
+    private int versionCarga;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var version = ++versionCarga;
+        catalogo = DefinicionesCatalogo.Buscar(Tipo);
+        datos = null;
+        error = null;
+        if (catalogo is not { } actual)
+            return;
+
+        if (Id is not int id)
+        {
+            if (actual.PermiteAltasYBajas)
+                datos = new();
+            else
+                error = "Este catálogo admite únicamente la edición de sus entradas.";
+            return;
+        }
+
+        try
+        {
+            var entrada = await Api.ObtenerAsync(actual, id, cancelacion.Token);
+            if (version == versionCarga)
+                datos = new DatosCatalogo { Descripcion = entrada.Descripcion };
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (guardando || catalogo is not { } actual || datos is not { } formulario)
+            return;
+
+        var version = versionCarga;
+        guardando = true;
+        error = null;
+        try
+        {
+            await Api.GuardarAsync(actual, Id, formulario, cancelacion.Token);
+            if (version == versionCarga && !cancelacion.IsCancellationRequested)
+                await VolverAsync();
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task VolverAsync()
+    {
+        if (!await Js.InvokeAsync<bool>("veteApp.volver"))
+            Navegacion.NavigateTo($"/{catalogo!.Ruta}", replace: true);
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

@@ -4,9 +4,9 @@
 @using Turnero.App.Veterinarios
 @inject VeterinariosApi Api
 
-<section class="veterinarios-pantalla">
-    <div class="veterinarios-panel">
-        <h1 class="veterinarios-titulo">Detalle del veterinario</h1>
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo">Detalle del veterinario</h1>
         @if (error is not null)
         {
             <p class="alert alert-danger mb-0" role="alert">@error</p>
@@ -17,9 +17,9 @@
         }
         else
         {
-            <article class="veterinarios-tarjeta mt-3">
-                <h2 class="veterinarios-nombre">@veterinario.NombreCompleto</h2>
-                <dl class="veterinarios-datos">
+            <article class="gestion-tarjeta mt-3">
+                <h2 class="gestion-nombre">@veterinario.NombreCompleto</h2>
+                <dl class="gestion-datos">
                     <dt>Matrícula</dt>
                     <dd>@veterinario.Matricula</dd>
                     <dt>Correo electrónico</dt>
@@ -27,7 +27,7 @@
                     <dt>Usuario</dt>
                     <dd>@veterinario.Username</dd>
                 </dl>
-                <a class="btn veterinarios-principal veterinarios-accion rounded-pill fw-semibold"
+                <a class="btn gestion-principal gestion-accion rounded-pill fw-semibold"
                    href="@($"administracion/veterinarios/{veterinario.Id}/editar")">Editar veterinario</a>
             </article>
         }
@@ -49,7 +49,7 @@
         {
             veterinario = await Api.ObtenerAsync(Id);
         }
-        catch (VeterinariosException ex)
+        catch (GestionApiException ex)
         {
             error = ex.Message;
         }

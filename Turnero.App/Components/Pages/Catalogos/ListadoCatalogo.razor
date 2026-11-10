@@ -1,0 +1,200 @@
+@page "/administracion/catalogos/{Tipo}"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using System.Globalization
+@using Turnero.App.Catalogos
+@inject CatalogosApi Api
+@inject NavigationManager Navegacion
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        @if (catalogo is not { } actual)
+        {
+            <h1 class="gestion-titulo">Catálogo no encontrado</h1>
+            <a href="administracion/catalogos" class="btn gestion-neutro rounded-pill">Volver a catálogos</a>
+        }
+        else
+        {
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <h1 class="gestion-titulo gestion-titulo-listado mb-0">@actual.Titulo</h1>
+                @if (actual.PermiteAltasYBajas)
+                {
+                    <a class="btn gestion-neutro rounded-pill fw-semibold" href="@($"{actual.Ruta}/nuevo")">Agregar</a>
+                }
+            </div>
+            <form class="gestion-busqueda d-flex gap-2 mt-3" role="search" @onsubmit="Buscar" @onsubmit:preventDefault>
+                <label for="buscar-catalogo" class="visually-hidden">Buscar por descripción</label>
+                <input id="buscar-catalogo" class="form-control rounded-pill" type="search"
+                       placeholder="Buscar descripción…" maxlength="100" @bind="textoBusqueda" @bind:event="oninput" />
+                <button type="submit" class="btn gestion-principal gestion-buscar rounded-pill fw-semibold">Buscar</button>
+            </form>
+            @if (error is not null)
+            {
+                <p class="alert alert-danger mt-3 mb-0" role="alert">@error</p>
+            }
+            @if (cargando)
+            {
+                <p class="mt-4 mb-0" role="status">Cargando catálogo…</p>
+            }
+            else if (errorCarga)
+            {
+                <button type="button" class="btn gestion-neutro rounded-pill mt-3"
+                        @onclick="() => CargarAsync(actual)">Reintentar</button>
+            }
+            else
+            {
+                var resultados = Filtrar();
+                if (resultados.Count == 0)
+                {
+                    <p class="mt-4 mb-0" role="status">@(string.IsNullOrWhiteSpace(Busqueda)
+                        ? "Este catálogo todavía no tiene entradas."
+                        : "No encontramos entradas con esa descripción.")</p>
+                }
+                else
+                {
+                    <ul class="gestion-listado list-unstyled d-grid mt-4 mb-0">
+                        @foreach (var entrada in resultados)
+                        {
+                            <li class="gestion-tarjeta" @key="entrada.Id">
+                                <h2 class="gestion-nombre">@entrada.Descripcion</h2>
+                                <div class="d-flex flex-wrap justify-content-between gap-2">
+                                    @if (actual.PermiteAltasYBajas)
+                                    {
+                                        <button type="button" class="btn btn-danger gestion-eliminar gestion-accion rounded-pill fw-semibold"
+                                                aria-label="@($"Eliminar {entrada.Descripcion}")" disabled="@eliminando"
+                                                @onclick="() => PedirConfirmacionAsync(actual, entrada)">Eliminar</button>
+                                    }
+                                    <a class="btn gestion-principal gestion-accion rounded-pill fw-semibold ms-auto"
+                                       href="@($"{actual.Ruta}/{entrada.Id}")"
+                                       aria-label="@($"Detalle de {entrada.Descripcion}")">Detalle</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            }
+        }
+    </div>
+</section>
+
+<DialogoBaja @ref="dialogo" Titulo="¿Eliminar entrada?" Ocupado="@eliminando" Confirmar="EliminarAsync" />
+
+@code {
+    [Parameter] public string? Tipo { get; set; }
+    [SupplyParameterFromQuery(Name = "buscar")] public string? Busqueda { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private DefinicionCatalogo? catalogo;
+    private List<EntradaCatalogo> entradas = [];
+    private string textoBusqueda = string.Empty;
+    private string? error;
+    private bool cargando;
+    private bool errorCarga;
+    private bool eliminando;
+    private int versionCarga;
+    private (DefinicionCatalogo Catalogo, EntradaCatalogo Entrada)? seleccionada;
+    private DialogoBaja dialogo = default!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        textoBusqueda = Busqueda ?? string.Empty;
+        var seleccion = DefinicionesCatalogo.Buscar(Tipo);
+        if (catalogo == seleccion)
+            return;
+
+        catalogo = seleccion;
+        if (seleccion is not null)
+            await CargarAsync(seleccion);
+    }
+
+    private async Task CargarAsync(DefinicionCatalogo actual)
+    {
+        var version = ++versionCarga;
+        cargando = true;
+        error = null;
+        errorCarga = false;
+        try
+        {
+            var registros = await Api.ListarAsync(actual, cancelacion.Token);
+            if (version == versionCarga && catalogo == actual)
+                entradas = registros;
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga && catalogo == actual)
+            {
+                error = ex.Message;
+                errorCarga = true;
+            }
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            if (version == versionCarga)
+                cargando = false;
+        }
+    }
+
+    private void Buscar()
+    {
+        var texto = textoBusqueda.Trim();
+        Navegacion.NavigateTo(Navegacion.GetUriWithQueryParameter("buscar",
+            texto.Length == 0 ? null : texto), replace: true);
+    }
+
+    private List<EntradaCatalogo> Filtrar()
+    {
+        var terminos = Busqueda?.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries) ?? [];
+        if (terminos.Length == 0)
+            return entradas;
+
+        var comparacion = CultureInfo.GetCultureInfo("es-AR").CompareInfo;
+        return entradas.Where(entrada => terminos.All(termino =>
+            comparacion.IndexOf(entrada.Descripcion, termino,
+                CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0)).ToList();
+    }
+
+    private async Task PedirConfirmacionAsync(DefinicionCatalogo actual, EntradaCatalogo entrada)
+    {
+        seleccionada = (actual, entrada);
+        await dialogo.AbrirAsync(entrada.Descripcion);
+    }
+
+    private async Task EliminarAsync()
+    {
+        if (eliminando || seleccionada is not { } seleccion ||
+            seleccion.Catalogo != catalogo || !seleccion.Catalogo.PermiteAltasYBajas)
+            return;
+
+        var (actual, entrada) = seleccion;
+        eliminando = true;
+        error = null;
+        try
+        {
+            await Api.EliminarAsync(actual, entrada.Id, cancelacion.Token);
+            if (catalogo == actual)
+                entradas.Remove(entrada);
+        }
+        catch (GestionApiException ex)
+        {
+            if (catalogo == actual)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            eliminando = false;
+        }
+
+        seleccionada = null;
+        if (!cancelacion.IsCancellationRequested)
+            await dialogo.CerrarAsync();
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

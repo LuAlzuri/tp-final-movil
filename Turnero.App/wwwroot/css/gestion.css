@@ -1,8 +1,8 @@
-.veterinarios-pantalla {
+.gestion-pantalla {
     padding: clamp(1rem, 6vw, 1.75rem) clamp(.85rem, 5vw, 1.4rem);
 }
 
-.veterinarios-panel {
+.gestion-panel {
     padding: clamp(.75rem, 4.3vw, 1.25rem);
     border: 1px solid #d9e4e3;
     border-radius: 1.3rem;
@@ -10,35 +10,35 @@
     box-shadow: 0 5px 16px rgb(21 62 66 / 10%);
 }
 
-.veterinarios-titulo,
-.veterinarios-nombre {
+.gestion-titulo,
+.gestion-nombre {
     color: #111;
     font-weight: 700;
     overflow-wrap: anywhere;
 }
 
-.veterinarios-titulo {
+.gestion-titulo {
     font-size: clamp(1.05rem, 5vw, 1.4rem);
 }
 
-.veterinarios-titulo-listado {
+.gestion-titulo-listado {
     font-size: clamp(1.2rem, 5.6vw, 1.55rem);
 }
 
-.veterinarios-nombre {
+.gestion-nombre {
     margin-bottom: .75rem;
     font-size: clamp(1rem, 4.8vw, 1.25rem);
 }
 
-.veterinarios-listado {
+.gestion-listado {
     gap: .8rem;
 }
 
-.veterinarios-listado .veterinarios-nombre {
+.gestion-listado .gestion-nombre {
     margin-bottom: 1.5rem;
 }
 
-.veterinarios-tarjeta {
+.gestion-tarjeta {
     padding: clamp(.7rem, 4vw, 1rem);
     border: 1px solid #e0ebea;
     border-radius: 1.05rem;
@@ -46,57 +46,57 @@
     box-shadow: 0 3px 10px rgb(21 62 66 / 9%);
 }
 
-.veterinarios-busqueda input {
+.gestion-busqueda input {
     flex: 1 1 0;
     width: auto;
     min-width: 0;
     padding-inline: .65rem;
 }
 
-.veterinarios-buscar {
+.gestion-buscar {
     flex: 0 0 clamp(4.5rem, 22vw, 5.75rem);
 }
 
-.veterinarios-accion {
+.gestion-accion {
     min-width: 6.25rem;
     max-width: 100%;
 }
 
 @media (max-width: 300px) {
-    .veterinarios-busqueda input {
+    .gestion-busqueda input {
         padding-inline: .4rem;
     }
 
-    .veterinarios-busqueda input::placeholder {
+    .gestion-busqueda input::placeholder {
         font-size: .75rem;
     }
 }
 
-.veterinarios-pantalla .form-control,
-.veterinarios-dialogo .btn,
-.veterinarios-pantalla .btn {
+.gestion-pantalla .form-control,
+.gestion-dialogo .btn,
+.gestion-pantalla .btn {
     min-height: 2.75rem;
 }
 
-.veterinarios-pantalla .btn,
-.veterinarios-dialogo .btn {
+.gestion-pantalla .btn,
+.gestion-dialogo .btn {
     display: inline-grid;
     place-items: center;
     padding-inline: clamp(.6rem, 3vw, 1rem);
     font-size: .875rem;
 }
 
-.veterinarios-accion:not(.veterinarios-eliminar) {
+.gestion-accion:not(.gestion-eliminar) {
     padding-inline: 1.25rem;
 }
 
-.veterinarios-listado .veterinarios-accion {
+.gestion-listado .gestion-accion {
     flex: 0 0 min(6.25rem, calc((100% - .5rem) / 2));
     min-width: 0;
     padding-inline: .6rem;
 }
 
-.veterinarios-principal {
+.gestion-principal {
     --bs-btn-color: #153e42;
     --bs-btn-bg: #77d8d9;
     --bs-btn-border-color: #56b9bb;
@@ -112,7 +112,7 @@
     --bs-btn-focus-shadow-rgb: 33, 86, 90;
 }
 
-.veterinarios-neutro {
+.gestion-neutro {
     --bs-btn-color: #153e42;
     --bs-btn-bg: #fff;
     --bs-btn-border-color: #b8d3d1;
@@ -128,24 +128,24 @@
     --bs-btn-focus-shadow-rgb: 33, 86, 90;
 }
 
-.veterinarios-eliminar {
+.gestion-eliminar {
     --bs-btn-bg: #b02a37;
     --bs-btn-border-color: #b02a37;
     --bs-btn-hover-bg: #98232e;
     --bs-btn-hover-border-color: #98232e;
 }
 
-.veterinarios-datos dd {
+.gestion-datos dd {
     overflow-wrap: anywhere;
 }
 
-.veterinarios-formulario .validation-message {
+.gestion-formulario .validation-message {
     margin-top: .25rem;
     color: #842029;
     font-size: .875rem;
 }
 
-.veterinarios-dialogo {
+.gestion-dialogo {
     width: min(calc(100% - 2rem), 23rem);
     max-height: calc(100dvh - 2rem);
     padding: 1.25rem;
@@ -157,11 +157,11 @@
     box-shadow: 0 16px 42px rgb(21 62 66 / 24%);
 }
 
-.veterinarios-dialogo::backdrop {
+.gestion-dialogo::backdrop {
     background: rgb(21 62 66 / 45%);
 }
 
-.veterinarios-aviso {
+.gestion-aviso {
     display: grid;
     place-items: center;
     width: 3rem;

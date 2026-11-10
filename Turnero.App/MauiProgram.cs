@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
+using Turnero.App.Catalogos;
 using Turnero.App.Seguridad;
 using Turnero.App.Veterinarios;
 
@@ -24,7 +25,9 @@ public static class MauiProgram
         builder.Services.AddSingleton<SesionService>();
         builder.Services.AddSingleton<AuthenticationStateProvider>(services =>
             services.GetRequiredService<SesionService>());
+        builder.Services.AddSingleton<ApiGestion>();
         builder.Services.AddSingleton<VeterinariosApi>();
+        builder.Services.AddSingleton<CatalogosApi>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();

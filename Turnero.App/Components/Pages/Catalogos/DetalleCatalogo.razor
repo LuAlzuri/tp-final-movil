@@ -1,0 +1,75 @@
+@page "/administracion/catalogos/{Tipo}/{Id:int}"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using Turnero.App.Catalogos
+@inject CatalogosApi Api
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo">@(catalogo?.Titulo ?? "Catálogo no encontrado")</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger mb-0" role="alert">@error</p>
+        }
+        else if (catalogo is { } actual)
+        {
+            @if (entrada is { } registro)
+            {
+                <article class="gestion-tarjeta mt-3">
+                    <h2 class="gestion-nombre">@registro.Descripcion</h2>
+                    <a href="@($"{actual.Ruta}/{registro.Id}/editar")"
+                       class="btn gestion-principal gestion-accion rounded-pill fw-semibold">Editar</a>
+                </article>
+            }
+            else
+            {
+                <p class="mb-0" role="status">Cargando detalle…</p>
+            }
+        }
+        else
+        {
+            <a href="administracion/catalogos" class="btn gestion-neutro rounded-pill">Volver a catálogos</a>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public string? Tipo { get; set; }
+    [Parameter] public int Id { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private DefinicionCatalogo? catalogo;
+    private EntradaCatalogo? entrada;
+    private string? error;
+    private int versionCarga;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var version = ++versionCarga;
+        catalogo = DefinicionesCatalogo.Buscar(Tipo);
+        entrada = null;
+        error = null;
+        if (catalogo is not { } actual)
+            return;
+
+        try
+        {
+            var registro = await Api.ObtenerAsync(actual, Id, cancelacion.Token);
+            if (version == versionCarga)
+                entrada = registro;
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}
