@@ -102,9 +102,16 @@
 }
 
 .inicio-atajo.flex-fill {
+    position: relative;
     border-radius: 0;
 }
 
-.inicio-atajo + .inicio-atajo {
-    border-inline-start: 1px solid #72c4c5;
+.inicio-atajo + .inicio-atajo::before {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 1px;
+    background: #5daeb1;
+    content: "";
+    pointer-events: none;
 }

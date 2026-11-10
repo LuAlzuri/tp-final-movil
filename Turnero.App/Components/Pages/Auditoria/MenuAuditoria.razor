@@ -1,0 +1,54 @@
+@page "/administracion/auditoria"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using System.Globalization
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo gestion-titulo-listado mb-0">Auditorías</h1>
+
+        <form class="gestion-busqueda d-flex gap-2 mt-3" role="search" @onsubmit="Buscar" @onsubmit:preventDefault>
+            <label for="buscar-auditoria" class="visually-hidden">Buscar auditoría</label>
+            <input id="buscar-auditoria" class="form-control rounded-pill" type="search"
+                   placeholder="Buscar auditoría…" maxlength="100" @bind="texto" @bind:event="oninput" />
+            <button type="submit" class="btn gestion-principal gestion-buscar rounded-pill fw-semibold">Buscar</button>
+        </form>
+
+        @if (resultados.Count == 0)
+        {
+            <p class="mt-4 mb-0" role="status">No encontramos informes con ese nombre.</p>
+        }
+        else
+        {
+            <ul class="gestion-listado list-unstyled d-grid mt-4 mb-0">
+                @foreach (var (tipo, titulo) in resultados)
+                {
+                    <li class="gestion-tarjeta">
+                        <h2 class="gestion-nombre">@titulo</h2>
+                        <div class="d-flex justify-content-end">
+                            <a href="@($"administracion/auditoria/{tipo}")"
+                               class="btn gestion-principal gestion-accion rounded-pill fw-semibold"
+                               aria-label="@($"Ver informe de {titulo.ToLowerInvariant()}")">Ver informe</a>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</section>
+
+@code {
+    private static readonly (string Tipo, string Titulo)[] Informes =
+        [("errores", "Errores"), ("movimientos", "Movimientos")];
+
+    private IReadOnlyList<(string Tipo, string Titulo)> resultados = Informes;
+    private string texto = string.Empty;
+
+    private void Buscar()
+    {
+        var busqueda = texto.Trim();
+        var comparacion = CultureInfo.GetCultureInfo("es-AR").CompareInfo;
+        resultados = Informes.Where(informe => comparacion.IndexOf(informe.Titulo, busqueda,
+            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0).ToArray();
+    }
+}
