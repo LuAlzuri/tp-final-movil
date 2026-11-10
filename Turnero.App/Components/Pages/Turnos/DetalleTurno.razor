@@ -1,58 +1,131 @@
 @page "/veterinario/turnos/{Id:int}"
 @attribute [Authorize(Roles = Roles.Veterinario)]
 @layout InicioLayout
+@using Microsoft.JSInterop
 @using Turnero.App.Turnos
 @inject TurnosApi Api
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
 @implements IDisposable
 
 <section class="gestion-pantalla">
-    <div class="gestion-panel">
-        <h1 class="gestion-titulo">Turno #@Id</h1>
+    <div class="gestion-panel detalle-turno">
+        <div class="detalle-turno-encabezado d-flex flex-wrap align-items-start justify-content-between gap-2">
+            <h1 class="gestion-titulo gestion-titulo-listado mb-0">Turno #@Id</h1>
+            @if (turno is { } actual)
+            {
+                <EtiquetaEstadoTurno Estado="@actual.EstadoId" Descripcion="@actual.EstadoDescripcion" />
+            }
+        </div>
+
+        @if (aviso is not null)
+        {
+            <p class="alert alert-success mt-3 mb-0" role="status">@aviso</p>
+        }
         @if (error is not null)
         {
-            <p class="alert alert-danger mb-0" role="alert">@error</p>
+            <p class="alert alert-danger mt-3" role="alert">@error</p>
+            <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
         }
         else if (turno is not { } registro)
         {
-            <p class="mb-0" role="status">Cargando turno…</p>
+            <p class="mt-3 mb-0" role="status">Cargando turno…</p>
         }
         else
         {
-            <article class="gestion-tarjeta mt-3">
-                <h2 class="gestion-nombre">@registro.PerroNombre</h2>
-                <dl class="gestion-datos mb-3">
-                    <dt>Estado</dt>
-                    <dd>@registro.EstadoDescripcion</dd>
-                    <dt>Fecha del turno</dt>
-                    <dd>@registro.FechaCupo.ToString("dd/MM/yyyy")</dd>
-                    <dt>Cupos reservados</dt>
-                    <dd>@registro.CuposReservados</dd>
-                    @if (!string.IsNullOrWhiteSpace(registro.ObservacionCupo))
-                    {
-                        <dt>Observación del cupo</dt>
-                        <dd>@registro.ObservacionCupo</dd>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(registro.Observaciones))
-                    {
-                        <dt>Observaciones</dt>
-                        <dd>@registro.Observaciones</dd>
-                    }
-                </dl>
-
-                @if (registro.Servicios.Count > 0)
+            <section class="mt-3" aria-labelledby="turno-paciente">
+                <h2 id="turno-paciente" class="detalle-turno-subtitulo">Paciente</h2>
+                <p class="detalle-turno-recuadro fw-semibold mb-2">@registro.PerroNombre</p>
+                @if (paciente is { } ficha)
                 {
-                    <h3 class="h6 fw-bold">Servicios</h3>
-                    <ul>
+                    <p class="detalle-turno-reactivo mb-2">
+                        <strong>¿Reactivo?</strong>
+                        <span class="badge rounded-pill @(ficha.Reactivo ? "text-bg-danger" : "text-bg-light")">@(ficha.Reactivo ? "Sí" : "No")</span>
+                    </p>
+                    <details class="detalle-turno-recuadro">
+                        <summary class="fw-semibold">Más información del paciente</summary>
+                        <dl class="gestion-datos detalle-turno-datos mt-2 mb-0">
+                            <div><dt>Fecha de nacimiento</dt><dd>@ficha.FechaNacimiento.ToString("dd/MM/yyyy")</dd></div>
+                            <div><dt>Vacunación completa</dt><dd>@(ficha.CalVacCom ? "Sí" : "No")</dd></div>
+                        </dl>
+                        <h3 class="h6 fw-bold mt-2">Patologías</h3>
+                        @if (ficha.Patologias.Count == 0)
+                        {
+                            <p class="mb-0">Sin patologías registradas.</p>
+                        }
+                        else
+                        {
+                            <ul class="mb-0">
+                                @foreach (var patologia in ficha.Patologias)
+                                {
+                                    <li>
+                                        @patologia.Descripcion · @(patologia.Controlado ? "Controlada" : "Sin controlar")
+                                        @if (!string.IsNullOrWhiteSpace(patologia.Observacion))
+                                        {
+                                            <div class="small">@patologia.Observacion</div>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </details>
+                }
+                else if (errorPaciente is not null)
+                {
+                    <p class="small mb-0"><strong>¿Reactivo?</strong> Sin información. @errorPaciente</p>
+                }
+                else
+                {
+                    <p class="small mb-0" role="status">Consultando ficha del paciente…</p>
+                }
+            </section>
+
+            <section class="mt-3" aria-labelledby="turno-servicios">
+                <h2 id="turno-servicios" class="detalle-turno-subtitulo">Servicios solicitados</h2>
+                @if (registro.Servicios.Count == 0)
+                {
+                    <p class="detalle-turno-recuadro mb-0">Sin servicios registrados.</p>
+                }
+                else
+                {
+                    <ul class="detalle-turno-recuadro detalle-turno-servicios list-unstyled mb-0">
                         @foreach (var servicio in registro.Servicios)
                         {
-                            <li>@servicio.Descripcion @(servicio.Completado ? "· Completado" : null)</li>
+                            <li class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <span>@servicio.Descripcion</span>
+                                @if (registro.EstadoId == EstadoTurno.Completado)
+                                {
+                                    <span class="badge rounded-pill @(servicio.Completado ? "text-bg-success" : "text-bg-light")">
+                                        @(servicio.Completado ? "Realizado" : "Sin realizar")
+                                    </span>
+                                }
+                            </li>
                         }
                     </ul>
                 }
-                @if (registro.Tratamientos.Count > 0)
-                {
-                    <h3 class="h6 fw-bold">Tratamientos</h3>
-                    <ul class="mb-0">
+            </section>
+
+            <section class="mt-3" aria-labelledby="turno-reserva">
+                <h2 id="turno-reserva" class="detalle-turno-subtitulo">Reserva</h2>
+                <dl class="gestion-datos detalle-turno-recuadro detalle-turno-datos mb-0">
+                    <div><dt>Fecha del turno</dt><dd>@registro.FechaCupo.ToString("dd/MM/yyyy")</dd></div>
+                    <div><dt>Cupos reservados</dt><dd>@registro.CuposReservados</dd></div>
+                    @if (!string.IsNullOrWhiteSpace(registro.ObservacionCupo))
+                    {
+                        <div class="detalle-turno-nota"><dt>Observación del cupo</dt><dd>@registro.ObservacionCupo</dd></div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(registro.Observaciones))
+                    {
+                        <div class="detalle-turno-nota"><dt>Observaciones</dt><dd>@registro.Observaciones</dd></div>
+                    }
+                </dl>
+            </section>
+
+            @if (registro.Tratamientos.Count > 0)
+            {
+                <section class="mt-3" aria-labelledby="turno-tratamientos">
+                    <h2 id="turno-tratamientos" class="detalle-turno-subtitulo">Tratamientos registrados</h2>
+                    <ul class="detalle-turno-recuadro detalle-turno-servicios list-unstyled mb-0">
                         @foreach (var tratamiento in registro.Tratamientos)
                         {
                             <li>@tratamiento.Descripcion
@@ -63,8 +136,82 @@
                             </li>
                         }
                     </ul>
+                </section>
+            }
+
+            <div class="d-flex flex-wrap justify-content-between gap-2 mt-3">
+                <button type="button" class="btn gestion-neutro rounded-pill fw-semibold" @onclick="VolverAsync">Volver</button>
+                @if (registro.EstadoId is EstadoTurno.Pendiente or EstadoTurno.Aprobado)
+                {
+                    <button type="button" class="btn gestion-principal rounded-pill fw-semibold"
+                            aria-expanded="@(mostrarCambio ? "true" : "false")" aria-controls="turno-cambio"
+                            disabled="@guardando" @onclick="AlternarCambio">Cambiar estado</button>
                 }
-            </article>
+            </div>
+
+            @if (mostrarCambio)
+            {
+                <section id="turno-cambio" class="detalle-turno-recuadro mt-3" aria-labelledby="turno-cambio-titulo">
+                    <h2 id="turno-cambio-titulo" class="detalle-turno-subtitulo">Cambiar estado</h2>
+                    @if (errorCambio is not null)
+                    {
+                        <p class="alert alert-danger" role="alert">@errorCambio</p>
+                    }
+                    @if (destino is not { } elegido)
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (registro.EstadoId == EstadoTurno.Pendiente)
+                            {
+                                <button type="button" class="btn gestion-principal rounded-pill"
+                                        @onclick="() => Elegir(EstadoTurno.Aprobado)">Aprobar</button>
+                                <button type="button" class="btn btn-danger rounded-pill"
+                                        @onclick="() => Elegir(EstadoTurno.Rechazado)">Rechazar</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn gestion-principal rounded-pill"
+                                        @onclick="() => Elegir(EstadoTurno.Completado)">Completar</button>
+                                <button type="button" class="btn btn-danger rounded-pill"
+                                        @onclick="() => Elegir(EstadoTurno.CanceladoPorVeterinario)">Cancelar turno</button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        @if (elegido == EstadoTurno.Completado)
+                        {
+                            <fieldset disabled="@guardando" class="mb-3">
+                                <legend class="h6 fw-semibold">Servicios realizados</legend>
+                                @foreach (var servicio in registro.Servicios)
+                                {
+                                    <label class="d-flex align-items-center gap-2 py-2">
+                                        <input type="checkbox" class="form-check-input mt-0"
+                                               checked="@serviciosRealizados.Contains(servicio.ServicioId)"
+                                               @onchange="args => MarcarServicio(servicio.ServicioId, args.Value)" />
+                                        @servicio.Descripcion
+                                    </label>
+                                }
+                                <label class="form-label fw-semibold mt-2" for="observaciones-completar">Observaciones</label>
+                                <textarea id="observaciones-completar" class="form-control" maxlength="1000"
+                                          rows="2" @bind="observaciones"></textarea>
+                            </fieldset>
+                        }
+                        <p>@(elegido switch
+                        {
+                            EstadoTurno.Aprobado => "¿Confirmás la aprobación del turno?",
+                            EstadoTurno.Rechazado => "¿Confirmás el rechazo del turno?",
+                            EstadoTurno.CanceladoPorVeterinario => "¿Confirmás la cancelación del turno?",
+                            _ => "¿Confirmás que querés marcar el turno como completado?"
+                        })</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn gestion-neutro rounded-pill" disabled="@guardando"
+                                    @onclick="() => destino = null">Atrás</button>
+                            <button type="button" class="btn gestion-principal rounded-pill fw-semibold" disabled="@guardando"
+                                    @onclick="ConfirmarCambioAsync">@(guardando ? "Guardando…" : "Confirmar cambio")</button>
+                        </div>
+                    }
+                </section>
+            }
         }
     </div>
 </section>
@@ -73,20 +220,54 @@
     [Parameter] public int Id { get; set; }
 
     private readonly CancellationTokenSource cancelacion = new();
+    private readonly HashSet<int> serviciosRealizados = [];
     private Turno? turno;
+    private PacienteTurno? paciente;
+    private EstadoTurno? destino;
     private string? error;
+    private string? errorPaciente;
+    private string? errorCambio;
+    private string? aviso;
+    private string? observaciones;
+    private bool mostrarCambio;
+    private bool guardando;
     private int versionCarga;
 
-    protected override async Task OnParametersSetAsync()
+    protected override Task OnParametersSetAsync()
+    {
+        aviso = null;
+        return CargarAsync();
+    }
+
+    private async Task CargarAsync()
     {
         var version = ++versionCarga;
         turno = null;
+        paciente = null;
         error = null;
+        errorPaciente = null;
+        errorCambio = null;
+        mostrarCambio = false;
+        destino = null;
         try
         {
             var registro = await Api.ObtenerAsync(Id, cancelacion.Token);
-            if (version == versionCarga)
-                turno = registro;
+            if (version != versionCarga || cancelacion.IsCancellationRequested)
+                return;
+
+            turno = registro;
+            StateHasChanged();
+            try
+            {
+                var ficha = await Api.ObtenerPacienteAsync(registro.PerroId, cancelacion.Token);
+                if (version == versionCarga)
+                    paciente = ficha;
+            }
+            catch (GestionApiException ex)
+            {
+                if (version == versionCarga)
+                    errorPaciente = ex.Message;
+            }
         }
         catch (GestionApiException ex)
         {
@@ -94,6 +275,65 @@
                 error = ex.Message;
         }
         catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    private void AlternarCambio()
+    {
+        mostrarCambio = !mostrarCambio;
+        destino = null;
+        errorCambio = null;
+    }
+
+    private void Elegir(EstadoTurno estado)
+    {
+        destino = estado;
+        errorCambio = null;
+        serviciosRealizados.Clear();
+        observaciones = turno?.Observaciones;
+    }
+
+    private void MarcarServicio(int id, object? marcado)
+    {
+        if (marcado is true)
+            serviciosRealizados.Add(id);
+        else
+            serviciosRealizados.Remove(id);
+    }
+
+    private async Task ConfirmarCambioAsync()
+    {
+        if (guardando || turno is not { } registro || destino is not { } elegido)
+            return;
+
+        var version = versionCarga;
+        guardando = true;
+        errorCambio = null;
+        aviso = null;
+        try
+        {
+            await Api.CambiarEstadoAsync(registro, elegido, serviciosRealizados.ToArray(), observaciones, cancelacion.Token);
+            if (version == versionCarga && !cancelacion.IsCancellationRequested)
+            {
+                aviso = "El estado del turno se actualizó.";
+                await CargarAsync();
+            }
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                errorCambio = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task VolverAsync()
+    {
+        if (!await Js.InvokeAsync<bool>("veteApp.volver"))
+            Navegacion.NavigateTo("/veterinario/turnos", replace: true);
     }
 
     public void Dispose()

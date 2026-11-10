@@ -1,0 +1,16 @@
+@using Turnero.App.Turnos
+
+<span class="turnos-estado @Clase rounded-pill fw-semibold">@Descripcion</span>
+
+@code {
+    [Parameter] public EstadoTurno Estado { get; set; }
+    [Parameter] public string Descripcion { get; set; } = string.Empty;
+
+    private string Clase => Estado switch
+    {
+        EstadoTurno.Pendiente => "turnos-estado-pendiente",
+        EstadoTurno.Aprobado => "turnos-estado-aprobado",
+        EstadoTurno.Rechazado or EstadoTurno.CanceladoPorTutor or EstadoTurno.CanceladoPorVeterinario => "turnos-estado-baja",
+        _ => string.Empty
+    };
+}
