@@ -7,9 +7,9 @@ public partial class MainPage : ContentPage
 		InitializeComponent();
 #if ANDROID
 		SafeAreaEdges = new SafeAreaEdges(
-			left: SafeAreaRegions.None,
+			left: SafeAreaRegions.Container,
 			top: SafeAreaRegions.None,
-			right: SafeAreaRegions.None,
+			right: SafeAreaRegions.Container,
 			bottom: SafeAreaRegions.Container);
 #endif
 	}

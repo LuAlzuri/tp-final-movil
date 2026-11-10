@@ -99,3 +99,45 @@
     color: #67242b;
     font-size: .875rem;
 }
+
+@media (orientation: landscape) and (min-width: 32rem) and (max-height: 37.5rem) {
+    .login-pantalla {
+        width: min(100%, 48rem);
+        padding-block: .85rem max(.85rem, env(safe-area-inset-bottom));
+        padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right));
+    }
+
+    .login-huellas {
+        background-size: clamp(3rem, 13vw, 6rem) auto;
+    }
+
+    .login-panel {
+        display: grid;
+        grid-template-columns: minmax(0, .85fr) minmax(0, 1fr);
+        align-items: center;
+        gap: clamp(1rem, 4vw, 2rem);
+        width: min(100%, 42rem);
+        min-height: 0;
+        aspect-ratio: auto;
+        padding: clamp(.9rem, 4vw, 1.5rem);
+    }
+
+    .login-logo {
+        gap: .55rem;
+        margin: 0;
+        font-size: clamp(1.6rem, 4.9vw, 2.35rem);
+    }
+
+    .login-logo-icono {
+        width: clamp(2.35rem, 7vw, 3.35rem);
+    }
+
+    .login-panel ::deep .login-formulario {
+        width: 100%;
+        gap: .75rem;
+    }
+
+    .login-boton {
+        min-height: 2.75rem;
+    }
+}
