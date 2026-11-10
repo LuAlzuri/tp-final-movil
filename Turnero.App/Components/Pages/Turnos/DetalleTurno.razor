@@ -1,0 +1,104 @@
+@page "/veterinario/turnos/{Id:int}"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Turnero.App.Turnos
+@inject TurnosApi Api
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo">Turno #@Id</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger mb-0" role="alert">@error</p>
+        }
+        else if (turno is not { } registro)
+        {
+            <p class="mb-0" role="status">Cargando turno…</p>
+        }
+        else
+        {
+            <article class="gestion-tarjeta mt-3">
+                <h2 class="gestion-nombre">@registro.PerroNombre</h2>
+                <dl class="gestion-datos mb-3">
+                    <dt>Estado</dt>
+                    <dd>@registro.EstadoDescripcion</dd>
+                    <dt>Fecha del turno</dt>
+                    <dd>@registro.FechaCupo.ToString("dd/MM/yyyy")</dd>
+                    <dt>Cupos reservados</dt>
+                    <dd>@registro.CuposReservados</dd>
+                    @if (!string.IsNullOrWhiteSpace(registro.ObservacionCupo))
+                    {
+                        <dt>Observación del cupo</dt>
+                        <dd>@registro.ObservacionCupo</dd>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(registro.Observaciones))
+                    {
+                        <dt>Observaciones</dt>
+                        <dd>@registro.Observaciones</dd>
+                    }
+                </dl>
+
+                @if (registro.Servicios.Count > 0)
+                {
+                    <h3 class="h6 fw-bold">Servicios</h3>
+                    <ul>
+                        @foreach (var servicio in registro.Servicios)
+                        {
+                            <li>@servicio.Descripcion @(servicio.Completado ? "· Completado" : null)</li>
+                        }
+                    </ul>
+                }
+                @if (registro.Tratamientos.Count > 0)
+                {
+                    <h3 class="h6 fw-bold">Tratamientos</h3>
+                    <ul class="mb-0">
+                        @foreach (var tratamiento in registro.Tratamientos)
+                        {
+                            <li>@tratamiento.Descripcion
+                                @if (!string.IsNullOrWhiteSpace(tratamiento.Razon))
+                                {
+                                    <div class="small">@tratamiento.Razon</div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </article>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private Turno? turno;
+    private string? error;
+    private int versionCarga;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var version = ++versionCarga;
+        turno = null;
+        error = null;
+        try
+        {
+            var registro = await Api.ObtenerAsync(Id, cancelacion.Token);
+            if (version == versionCarga)
+                turno = registro;
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

@@ -1,0 +1,123 @@
+@page "/veterinario/turnos"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Turnero.App.Turnos
+@inject TurnosApi Api
+@inject NavigationManager Navegacion
+@implements IDisposable
+
+<section class="gestion-pantalla" aria-labelledby="titulo-turnos">
+    <h1 id="titulo-turnos" class="visually-hidden">Turnos</h1>
+
+    @if (cargando)
+    {
+        <p role="status">Cargando turnos…</p>
+    }
+    else if (error is not null)
+    {
+        <p class="alert alert-danger" role="alert">@error</p>
+        <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+    }
+    else if (turnos.Count == 0)
+    {
+        <p class="gestion-panel mb-0" role="status">@(paginaActual == 1 ? "Todavía no hay turnos para mostrar." : "No hay más turnos.")</p>
+    }
+    else
+    {
+        <ul class="gestion-listado list-unstyled d-grid mb-0">
+            @foreach (var turno in turnos)
+            {
+                <li class="gestion-tarjeta turnos-tarjeta d-grid" @key="turno.Id">
+                    <div class="turnos-encabezado d-flex flex-wrap align-items-start justify-content-between gap-2">
+                        <h2 class="turnos-titulo gestion-nombre mb-0">Turno #@turno.Id</h2>
+                        <span class="turnos-estado @ClaseEstado(turno.EstadoId) rounded-pill fw-semibold">@turno.EstadoDescripcion</span>
+                    </div>
+                    <p class="turnos-perro mb-0"><strong>Paciente:</strong> <span>@turno.PerroNombre</span></p>
+                    <div class="d-flex justify-content-end">
+                        <a href="@($"veterinario/turnos/{turno.Id}")"
+                           class="btn gestion-neutro gestion-accion turnos-ver rounded-pill fw-semibold"
+                           aria-label="@($"Ver turno #{turno.Id}")">Ver</a>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (!cargando && (paginaActual > 1 || PuedeAvanzar))
+    {
+        <nav class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3" aria-label="Paginación de turnos">
+            <button type="button" class="btn gestion-neutro rounded-pill" disabled="@(paginaActual == 1)"
+                    @onclick="() => CambiarPagina(paginaActual - 1)">Anterior</button>
+            <span class="small fw-semibold" aria-live="polite">Página @paginaActual</span>
+            <button type="button" class="btn gestion-neutro rounded-pill" disabled="@(!PuedeAvanzar)"
+                    @onclick="() => CambiarPagina(paginaActual + 1)">Siguiente</button>
+        </nav>
+    }
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "pagina")] public int? Pagina { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<Turno> turnos = [];
+    private int paginaActual = 1;
+    private int versionCarga;
+    private bool cargando;
+    private string? error;
+
+    private bool PuedeAvanzar => !cargando && error is null &&
+        turnos.Count == TurnosApi.TamanoPagina && paginaActual < TurnosApi.MaximaPagina;
+
+    private static string ClaseEstado(int id) => id switch
+    {
+        1 => "turnos-estado-pendiente",
+        2 => "turnos-estado-aprobado",
+        3 or 4 or 5 => "turnos-estado-baja",
+        _ => string.Empty
+    };
+
+    protected override Task OnParametersSetAsync()
+    {
+        paginaActual = Math.Clamp(Pagina ?? 1, 1, TurnosApi.MaximaPagina);
+        return CargarAsync();
+    }
+
+    private void CambiarPagina(int destino)
+    {
+        if (cargando || destino < 1 || (destino > paginaActual && !PuedeAvanzar))
+            return;
+
+        Navegacion.NavigateTo(Navegacion.GetUriWithQueryParameter("pagina",
+            destino == 1 ? (int?)null : destino), replace: true);
+    }
+
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        cargando = true;
+        error = null;
+        try
+        {
+            var registros = await Api.ListarAsync(paginaActual, cancelacion.Token);
+            if (version == versionCarga)
+                turnos = registros;
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            if (version == versionCarga)
+                cargando = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}
