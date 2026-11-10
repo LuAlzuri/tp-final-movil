@@ -72,7 +72,7 @@
                              style="max-height: 12rem; object-fit: contain;" />
                     }
                     <InputFile @key="versionSelector" id="perro-imagen" class="form-control"
-                               accept=".jpg,.jpeg,.png,.webp" aria-describedby="ayuda-imagen-perro"
+                               accept="image/jpeg,image/png,image/webp" aria-describedby="ayuda-imagen-perro"
                                disabled="@(guardando || leyendoImagen)" OnChange="SeleccionarImagenAsync" />
                     <p id="ayuda-imagen-perro" class="form-text mb-0">JPG, PNG o WebP de hasta 5 MiB.</p>
                     @if (imagenSeleccionada is { } seleccion)
