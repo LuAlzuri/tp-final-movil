@@ -1,0 +1,39 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime Js
+
+<dialog @ref="dialogo" class="gestion-dialogo" aria-labelledby="@tituloId" aria-describedby="@avisoId">
+    <div class="gestion-aviso mx-auto" aria-hidden="true">!</div>
+    <h2 id="@tituloId" class="h5 fw-bold">@Titulo</h2>
+    <p id="@avisoId">@Introduccion <strong>@nombre</strong>. Esta acción es irreversible desde la app.</p>
+    <div class="d-flex justify-content-center flex-wrap gap-2">
+        <button type="button" class="btn gestion-neutro rounded-pill" autofocus
+                disabled="@Ocupado" @onclick="CerrarAsync">Cancelar</button>
+        <button type="button" class="btn btn-danger gestion-eliminar rounded-pill"
+                disabled="@Ocupado" @onclick="Confirmar">@(Ocupado ? "Eliminando…" : "Sí, eliminar")</button>
+    </div>
+</dialog>
+
+@code {
+    [Parameter, EditorRequired] public string Titulo { get; set; } = string.Empty;
+    [Parameter] public string Introduccion { get; set; } = "Se eliminará";
+    [Parameter] public bool Ocupado { get; set; }
+    [Parameter] public EventCallback Confirmar { get; set; }
+
+    private readonly string tituloId = $"titulo-baja-{Guid.NewGuid():N}";
+    private readonly string avisoId = $"aviso-baja-{Guid.NewGuid():N}";
+    private ElementReference dialogo;
+    private string? nombre;
+
+    public async Task AbrirAsync(string entrada)
+    {
+        nombre = entrada;
+        StateHasChanged();
+        await Js.InvokeVoidAsync("veteApp.abrirConfirmacion", dialogo);
+    }
+
+    public async Task CerrarAsync()
+    {
+        await Js.InvokeVoidAsync("veteApp.cerrarConfirmacion", dialogo);
+        nombre = null;
+    }
+}
