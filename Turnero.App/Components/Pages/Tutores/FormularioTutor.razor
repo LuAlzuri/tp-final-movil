@@ -1,0 +1,185 @@
+@page "/veterinario/tutores/nuevo"
+@page "/veterinario/tutores/{Id:int}/editar"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Microsoft.JSInterop
+@using Turnero.App.Tutores
+@inject TutoresApi Api
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo mb-3">@(Id.HasValue ? "Editar tutor" : "Agregar tutor")</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger" role="alert">@error</p>
+        }
+        @if (datos is { } formulario)
+        {
+            <EditForm Model="formulario" class="gestion-tarjeta gestion-formulario gestion-formulario-veterinario d-grid gap-3"
+                      OnValidSubmit="GuardarAsync" novalidate>
+                <DataAnnotationsValidator />
+                <div>
+                    <label class="form-label fw-semibold" for="cuenta-nombre">Nombre</label>
+                    <InputText id="cuenta-nombre" class="form-control" maxlength="100"
+                               placeholder="Ej. Lucía" @bind-Value="formulario.Nombre" />
+                    <ValidationMessage For="() => formulario.Nombre" />
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" for="cuenta-apellido">Apellido</label>
+                    <InputText id="cuenta-apellido" class="form-control" maxlength="100"
+                               placeholder="Ej. García" @bind-Value="formulario.Apellido" />
+                    <ValidationMessage For="() => formulario.Apellido" />
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" for="cuenta-usuario">Usuario</label>
+                    <InputText id="cuenta-usuario" class="form-control" maxlength="100"
+                               placeholder="Ej. lucia.garcia" @bind-Value="formulario.Username" />
+                    <ValidationMessage For="() => formulario.Username" />
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" for="cuenta-email">Correo electrónico</label>
+                    <InputText id="cuenta-email" class="form-control" type="email" maxlength="254"
+                               placeholder="Ej. lucia@ejemplo.com" @bind-Value="formulario.Email" />
+                    <ValidationMessage For="() => formulario.Email" />
+                </div>
+                @if (formulario is DatosAltaTutor alta)
+                {
+                    <div>
+                        <label class="form-label fw-semibold" for="cuenta-contrasena">Contraseña inicial</label>
+                        <CampoContrasena Id="cuenta-contrasena" NombreCampo="contraseña inicial"
+                                         DescribedBy="ayuda-contrasena" Disabled="@guardando" @bind-Value="alta.Contrasena" />
+                        <div id="ayuda-contrasena" class="form-text">Entre 12 y 128 caracteres.</div>
+                        <ValidationMessage For="() => alta.Contrasena" />
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold" for="cuenta-repetir-contrasena">Repetir contraseña</label>
+                        <CampoContrasena Id="cuenta-repetir-contrasena" NombreCampo="repetición de contraseña"
+                                         Disabled="@guardando" @bind-Value="alta.RepetirContrasena" />
+                        <ValidationMessage For="() => alta.RepetirContrasena" />
+                    </div>
+                    <fieldset class="gestion-formulario-acciones d-grid gap-3" disabled="@guardando">
+                        <legend class="h6 fw-bold">Teléfonos de contacto</legend>
+                        <ValidationMessage For="() => alta.Telefonos" />
+                        <ValidationSummary Model="@alta" class="validation-message mb-0" />
+                        @for (var indice = 0; indice < alta.Telefonos.Count; indice++)
+                        {
+                            var numero = indice + 1;
+                            var telefono = alta.Telefonos[indice];
+                            <div class="gestion-tarjeta d-grid gap-2" @key="telefono">
+                                <h2 class="h6 fw-bold mb-0">Teléfono @numero</h2>
+                                <CamposTelefonoTutor Datos="@telefono" Prefijo="@($"alta-telefono-{numero}")" />
+                                @if (alta.Telefonos.Count > 1)
+                                {
+                                    <button type="button" class="btn gestion-neutro rounded-pill"
+                                            aria-label="@($"Quitar teléfono {numero}")"
+                                            @onclick="() => alta.Telefonos.Remove(telefono)">Quitar</button>
+                                }
+                            </div>
+                        }
+                        <button type="button" class="btn gestion-neutro rounded-pill"
+                                @onclick="() => alta.Telefonos.Add(new())">Agregar otro teléfono</button>
+                    </fieldset>
+                }
+                <div class="gestion-formulario-acciones d-flex justify-content-end flex-wrap gap-2">
+                    <button type="button" class="btn gestion-neutro rounded-pill" disabled="@guardando"
+                            @onclick="VolverAsync">Cancelar</button>
+                    <button type="submit" class="btn gestion-principal rounded-pill fw-semibold" disabled="@guardando">
+                        @(guardando ? "Guardando…" : "Guardar")
+                    </button>
+                </div>
+            </EditForm>
+        }
+        else if (error is null)
+        {
+            <p class="mb-0" role="status">Cargando tutor…</p>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private DatosTutor? datos;
+    private string? error;
+    private bool guardando;
+    private int versionCarga;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var version = ++versionCarga;
+        datos = null;
+        error = null;
+        if (Id is not int id)
+        {
+            datos = new DatosAltaTutor();
+            return;
+        }
+
+        try
+        {
+            var tutor = await Api.ObtenerAsync(id, cancelacion.Token);
+            if (version == versionCarga)
+                datos = new DatosTutor
+                {
+                    Nombre = tutor.Nombre, Apellido = tutor.Apellido, Username = tutor.Username, Email = tutor.Email
+                };
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (guardando || datos is not { } formulario)
+            return;
+
+        var version = versionCarga;
+        error = null;
+        guardando = true;
+        try
+        {
+            if (formulario is DatosAltaTutor alta)
+            {
+                await Api.CrearAsync(alta, cancelacion.Token);
+                alta.Contrasena = alta.RepetirContrasena = null;
+            }
+            else if (Id is int id)
+            {
+                await Api.ModificarAsync(id, formulario, cancelacion.Token);
+            }
+
+            if (version == versionCarga && !cancelacion.IsCancellationRequested)
+                await VolverAsync();
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task VolverAsync()
+    {
+        if (!await Js.InvokeAsync<bool>("veteApp.volver"))
+            Navegacion.NavigateTo(Id is int id ? $"/veterinario/tutores/{id}" : "/veterinario/tutores", replace: true);
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

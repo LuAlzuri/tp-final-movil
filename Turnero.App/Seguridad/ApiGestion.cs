@@ -42,6 +42,7 @@ public sealed class ApiGestion(SesionService sesion)
                         "auditoria" => "Tu cuenta no tiene permiso para consultar auditorías.",
                         "turnos" => "Tu cuenta no tiene permiso para consultar turnos.",
                         "paciente" => "Tu cuenta no tiene permiso para consultar al paciente.",
+                        "tutores" or "telefonos" => "Tu cuenta no tiene permiso para gestionar tutores.",
                         _ => "Tu cuenta no tiene permiso para gestionar catálogos."
                     },
                     HttpStatusCode.NotFound => recurso switch
@@ -50,6 +51,8 @@ public sealed class ApiGestion(SesionService sesion)
                         "auditoria" => "El informe ya no está disponible.",
                         "turnos" => "El turno ya no está disponible.",
                         "paciente" => "La ficha del paciente ya no está disponible.",
+                        "tutores" => "El tutor ya no está disponible.",
+                        "telefonos" => "El teléfono o el tutor ya no está disponible.",
                         _ => "La entrada ya no está disponible."
                     },
                     HttpStatusCode.BadRequest => "Revisá los datos ingresados.",
