@@ -173,3 +173,18 @@
     font-size: 1.65rem;
     font-weight: 700;
 }
+
+@media (orientation: landscape) and (min-width: 32rem) and (max-height: 37.5rem) {
+    .gestion-pantalla {
+        padding-block: .85rem;
+    }
+
+    .gestion-listado,
+    .gestion-formulario-veterinario {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .gestion-formulario-acciones {
+        grid-column: 1 / -1;
+    }
+}
