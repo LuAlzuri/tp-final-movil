@@ -9,10 +9,11 @@ public sealed class ApiGestion(SesionService sesion)
     internal async Task<List<T>> ListarPaginadoAsync<T>(string ruta, CancellationToken ct, string? recurso = null)
     {
         const int tamanoPagina = 100;
+        var separador = ruta.Contains('?') ? '&' : '?';
         var registros = new List<T>();
         for (var pagina = 1; ; pagina++)
         {
-            using var respuesta = await EnviarAsync(HttpMethod.Get, $"{ruta}?pagina={pagina}&tamano={tamanoPagina}",
+            using var respuesta = await EnviarAsync(HttpMethod.Get, $"{ruta}{separador}pagina={pagina}&tamano={tamanoPagina}",
                 ct, recurso: recurso);
             var resultados = await LeerAsync<List<T>>(respuesta, ct);
             registros.AddRange(resultados);
@@ -41,7 +42,7 @@ public sealed class ApiGestion(SesionService sesion)
                         "veterinarios" => "Tu cuenta no tiene permiso para gestionar veterinarios.",
                         "auditoria" => "Tu cuenta no tiene permiso para consultar auditorías.",
                         "turnos" => "Tu cuenta no tiene permiso para consultar turnos.",
-                        "paciente" => "Tu cuenta no tiene permiso para consultar al paciente.",
+                        "perros" => "Tu cuenta no tiene permiso para gestionar perros.",
                         "tutores" or "telefonos" => "Tu cuenta no tiene permiso para gestionar tutores.",
                         _ => "Tu cuenta no tiene permiso para gestionar catálogos."
                     },
@@ -50,7 +51,7 @@ public sealed class ApiGestion(SesionService sesion)
                         "veterinarios" => "El veterinario ya no está disponible.",
                         "auditoria" => "El informe ya no está disponible.",
                         "turnos" => "El turno ya no está disponible.",
-                        "paciente" => "La ficha del paciente ya no está disponible.",
+                        "perros" => "El perro o el tutor ya no está disponible.",
                         "tutores" => "El tutor ya no está disponible.",
                         "telefonos" => "El teléfono o el tutor ya no está disponible.",
                         _ => "La entrada ya no está disponible."

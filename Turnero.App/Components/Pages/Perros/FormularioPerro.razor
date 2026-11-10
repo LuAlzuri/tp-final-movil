@@ -1,0 +1,275 @@
+@page "/veterinario/tutores/{TutorId:int}/perros/nuevo"
+@page "/veterinario/tutores/{TutorId:int}/perros/{Id:int}/editar"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Microsoft.JSInterop
+@using Turnero.App.Catalogos
+@using Turnero.App.Perros
+@inject CatalogosApi Catalogos
+@inject PerrosApi Api
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo mb-3">@(Id.HasValue ? "Editar perro" : "Agregar perro")</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger" role="alert">@error</p>
+        }
+        @if (datos is { } formulario)
+        {
+            <EditForm Model="formulario" OnValidSubmit="GuardarAsync" novalidate
+                      class="gestion-tarjeta gestion-formulario gestion-formulario-veterinario d-grid gap-3">
+                <DataAnnotationsValidator />
+                <div>
+                    <label for="perro-nombre" class="form-label fw-semibold">Nombre</label>
+                    <InputText id="perro-nombre" class="form-control" placeholder="Ej. Mora" maxlength="100"
+                               @bind-Value="formulario.Nombre" />
+                    <ValidationMessage For="() => formulario.Nombre" />
+                </div>
+                <div>
+                    <label for="perro-nacimiento" class="form-label fw-semibold">Fecha de nacimiento</label>
+                    <InputDate id="perro-nacimiento" class="form-control" @bind-Value="formulario.FechaNacimiento" />
+                    <ValidationMessage For="() => formulario.FechaNacimiento" />
+                </div>
+                <div>
+                    <label for="perro-grupo" class="form-label fw-semibold">Grupo etario</label>
+                    <InputSelect id="perro-grupo" class="form-select" @bind-Value="formulario.GrupoEtarioId">
+                        <option value="0">Seleccioná un grupo</option>
+                        @foreach (var grupo in grupos)
+                        {
+                            <option value="@grupo.Id">@grupo.Descripcion</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => formulario.GrupoEtarioId" />
+                </div>
+                <div>
+                    <label for="perro-tamanio" class="form-label fw-semibold">Tamaño</label>
+                    <InputSelect id="perro-tamanio" class="form-select" @bind-Value="formulario.TamanioId">
+                        <option value="0">Seleccioná un tamaño</option>
+                        @foreach (var tamanio in tamanios)
+                        {
+                            <option value="@tamanio.Id">@tamanio.Descripcion</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => formulario.TamanioId" />
+                </div>
+                <label class="d-flex align-items-center gap-2">
+                    <InputCheckbox class="form-check-input mt-0" @bind-Value="formulario.Reactivo" />
+                    ¿Reactivo?
+                </label>
+                <label class="d-flex align-items-center gap-2">
+                    <InputCheckbox class="form-check-input mt-0" @bind-Value="formulario.CalVacCom" />
+                    Vacunación completa
+                </label>
+                <div class="gestion-formulario-acciones">
+                    <label class="form-label fw-semibold" for="perro-imagen">Foto de la mascota (opcional)</label>
+                    @if (imagenActual is not null)
+                    {
+                        <img src="@imagenActual" alt="Foto actual de la mascota" class="img-thumbnail d-block mb-2"
+                             style="max-height: 12rem; object-fit: contain;" />
+                    }
+                    <InputFile @key="versionSelector" id="perro-imagen" class="form-control"
+                               accept=".jpg,.jpeg,.png,.webp" aria-describedby="ayuda-imagen-perro"
+                               disabled="@(guardando || leyendoImagen)" OnChange="SeleccionarImagenAsync" />
+                    <p id="ayuda-imagen-perro" class="form-text mb-0">JPG, PNG o WebP de hasta 5 MiB.</p>
+                    @if (imagenSeleccionada is { } seleccion)
+                    {
+                        <p class="small text-break mt-2 mb-0" role="status">Foto seleccionada: @seleccion.Nombre</p>
+                    }
+                    @if (errorImagen is not null)
+                    {
+                        <p class="text-danger mt-2 mb-0" role="alert">@errorImagen</p>
+                    }
+                    @if (imagenSeleccionada is not null || errorImagen is not null)
+                    {
+                        <button type="button" class="btn gestion-neutro rounded-pill mt-2"
+                                disabled="@guardando" @onclick="DescartarImagen">Descartar selección</button>
+                    }
+                </div>
+                <div class="gestion-formulario-acciones d-flex justify-content-end flex-wrap gap-2">
+                    <button type="button" class="btn gestion-neutro rounded-pill" disabled="@guardando" @onclick="VolverAsync">Cancelar</button>
+                    <button type="submit" class="btn gestion-principal rounded-pill fw-semibold"
+                            disabled="@(guardando || leyendoImagen || errorImagen is not null)">@(guardando ? "Guardando…" : "Guardar")</button>
+                </div>
+            </EditForm>
+        }
+        else if (error is null)
+        {
+            <p class="mb-0" role="status">Cargando formulario…</p>
+        }
+        else
+        {
+            <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public int TutorId { get; set; }
+    [Parameter] public int? Id { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<EntradaCatalogo> grupos = [];
+    private List<EntradaCatalogo> tamanios = [];
+    private DatosPerro? datos;
+    private string? error;
+    private string? errorImagen;
+    private string? imagenActual;
+    private (byte[] Contenido, string Nombre, string Tipo)? imagenSeleccionada;
+    private int? perroGuardadoId;
+    private bool leyendoImagen;
+    private int versionSelector;
+    private bool guardando;
+    private int versionCarga;
+    private string RutaListado => $"veterinario/tutores/{TutorId}/perros";
+
+    protected override Task OnParametersSetAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        var tutorId = TutorId;
+        datos = null;
+        error = null;
+        imagenActual = null;
+        perroGuardadoId = null;
+        leyendoImagen = false;
+        DescartarImagen();
+
+        try
+        {
+            var ct = cancelacion.Token;
+            var grupoTask = Catalogos.ListarAsync(DefinicionesCatalogo.Buscar("grupos-etarios")!, ct);
+            var tamanioTask = Catalogos.ListarAsync(DefinicionesCatalogo.Buscar("tamanios")!, ct);
+            await Task.WhenAll(grupoTask, tamanioTask);
+            var perro = Id is int id ? await Api.ObtenerAsync(id, ct) : null;
+            if (version != versionCarga)
+                return;
+
+            if (perro is not null && perro.TutorId != tutorId)
+                throw new GestionApiException("El perro no pertenece a este tutor.");
+
+            grupos = await grupoTask;
+            tamanios = await tamanioTask;
+            imagenActual = Api.ResolverImagen(perro?.ImagenUrl);
+            datos = perro is null ? new DatosPerro() : new DatosPerro
+            {
+                Nombre = perro.Nombre,
+                FechaNacimiento = perro.FechaNacimiento,
+                Reactivo = perro.Reactivo,
+                CalVacCom = perro.CalVacCom,
+                GrupoEtarioId = perro.GrupoEtarioId,
+                TamanioId = perro.TamanioId
+            };
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    private async Task SeleccionarImagenAsync(InputFileChangeEventArgs evento)
+    {
+        if (guardando || leyendoImagen || evento.FileCount == 0)
+            return;
+
+        var version = versionCarga;
+        imagenSeleccionada = null;
+        errorImagen = null;
+        var archivo = evento.File;
+        var tipo = Path.GetExtension(archivo.Name).ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            _ => null
+        };
+        if (tipo is null || archivo.Size is <= 0 or > PerrosApi.MaximoImagen)
+        {
+            errorImagen = "Elegí una imagen JPG, PNG o WebP de hasta 5 MiB.";
+            return;
+        }
+
+        leyendoImagen = true;
+        try
+        {
+            var ct = cancelacion.Token;
+            await using var origen = archivo.OpenReadStream(PerrosApi.MaximoImagen, ct);
+            using var contenido = new MemoryStream((int)archivo.Size);
+            await origen.CopyToAsync(contenido, ct);
+            if (version == versionCarga)
+                imagenSeleccionada = (contenido.ToArray(), archivo.Name, tipo);
+        }
+        catch (Exception ex) when (ex is IOException or JSException)
+        {
+            if (version == versionCarga)
+                errorImagen = "No se pudo leer la foto. Volvé a seleccionarla.";
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            if (version == versionCarga)
+                leyendoImagen = false;
+        }
+    }
+
+    private void DescartarImagen()
+    {
+        imagenSeleccionada = null;
+        errorImagen = null;
+        versionSelector++;
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (guardando || leyendoImagen || errorImagen is not null || datos is not { } formulario)
+            return;
+
+        var version = versionCarga;
+        error = null;
+        guardando = true;
+        var datosGuardados = false;
+        try
+        {
+            var ct = cancelacion.Token;
+            var id = await Api.GuardarAsync(TutorId, Id ?? perroGuardadoId, formulario, ct);
+            if (version != versionCarga || ct.IsCancellationRequested)
+                return;
+
+            perroGuardadoId = id;
+            datosGuardados = true;
+            if (imagenSeleccionada is { } imagen)
+                await Api.SubirImagenAsync(id, imagen.Contenido, imagen.Nombre, imagen.Tipo, ct);
+
+            if (version == versionCarga && !ct.IsCancellationRequested)
+                await VolverAsync();
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = datosGuardados ? $"Los datos se guardaron, pero no se pudo subir la foto. {ex.Message}" : ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task VolverAsync()
+    {
+        if (!await Js.InvokeAsync<bool>("veteApp.volver"))
+            Navegacion.NavigateTo(RutaListado, replace: true);
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

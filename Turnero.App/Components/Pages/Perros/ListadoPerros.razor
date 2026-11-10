@@ -1,0 +1,194 @@
+@page "/veterinario/tutores/{TutorId:int}/perros"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using System.Globalization
+@using Turnero.App.Perros
+@inject PerrosApi Api
+@inject NavigationManager Navegacion
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h1 class="gestion-titulo gestion-titulo-listado mb-0">Perros</h1>
+            <a class="btn gestion-neutro rounded-pill fw-semibold" href="@($"{Ruta}/nuevo")">
+                Agregar perro
+            </a>
+        </div>
+
+        <form class="gestion-busqueda d-flex gap-2 mt-3" role="search"
+              @onsubmit="Buscar" @onsubmit:preventDefault>
+            <label for="buscar-perro" class="visually-hidden">Buscar perro por nombre</label>
+            <input id="buscar-perro" class="form-control rounded-pill" type="search"
+                   placeholder="Buscar perro…" maxlength="200" @bind="textoBusqueda" @bind:event="oninput" />
+            <button type="submit" class="btn gestion-principal gestion-buscar rounded-pill fw-semibold">Buscar</button>
+        </form>
+
+        @if (error is not null)
+        {
+            <p class="alert alert-danger mt-3 mb-0" role="alert">@error</p>
+        }
+
+        @if (cargando)
+        {
+            <p class="mt-4 mb-0" role="status">Cargando perros…</p>
+        }
+        else if (errorCarga)
+        {
+            <button class="btn gestion-neutro rounded-pill mt-3" @onclick="CargarAsync">Reintentar</button>
+        }
+        else
+        {
+            var resultados = Filtrar();
+            if (resultados.Count == 0)
+            {
+                <p class="mt-4 mb-0" role="status">@(string.IsNullOrWhiteSpace(Busqueda)
+                    ? "Este tutor no tiene perros registrados."
+                    : "No encontramos perros con ese nombre.")</p>
+            }
+            else
+            {
+                <ul class="gestion-listado list-unstyled d-grid mt-4 mb-0">
+                    @foreach (var perro in resultados)
+                    {
+                        <li class="gestion-tarjeta" @key="perro.Id">
+                            <h2 class="gestion-nombre">@perro.Nombre</h2>
+                            <div class="d-flex flex-wrap justify-content-between gap-2">
+                                <button type="button" class="btn btn-danger gestion-eliminar gestion-accion rounded-pill fw-semibold"
+                                        aria-label="@($"Eliminar a {perro.Nombre}")"
+                                        disabled="@eliminando" @onclick="() => PedirConfirmacionAsync(perro)">Eliminar</button>
+                                <a class="btn gestion-principal gestion-accion rounded-pill fw-semibold"
+                                   href="@($"{Ruta}/{perro.Id}/editar")"
+                                   aria-label="@($"Editar a {perro.Nombre}")">Editar</a>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        }
+    </div>
+</section>
+
+<DialogoBaja @ref="dialogo" Titulo="¿Eliminar perro?" Introduccion="Se dará de baja a"
+             Ocupado="@eliminando" Confirmar="EliminarAsync" />
+
+@code {
+    [Parameter] public int TutorId { get; set; }
+
+    private string Ruta => $"veterinario/tutores/{TutorId}/perros";
+    [SupplyParameterFromQuery(Name = "buscar")]
+    public string? Busqueda { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<Perro> perros = [];
+    private string textoBusqueda = string.Empty;
+    private string? error;
+    private bool cargando = true;
+    private bool errorCarga;
+    private bool eliminando;
+    private Perro? seleccionado;
+    private DialogoBaja dialogo = default!;
+
+    private int tutorCargado;
+    private int versionCarga;
+
+    protected override Task OnParametersSetAsync()
+    {
+        textoBusqueda = Busqueda ?? string.Empty;
+        if (tutorCargado == TutorId)
+            return Task.CompletedTask;
+
+        tutorCargado = TutorId;
+        return CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        seleccionado = null;
+        cargando = true;
+        error = null;
+        errorCarga = false;
+        try
+        {
+            var registros = await Api.ListarAsync(TutorId, cancelacion.Token);
+            if (version == versionCarga)
+                perros = registros;
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+            {
+                error = ex.Message;
+                errorCarga = true;
+            }
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            if (version == versionCarga)
+                cargando = false;
+        }
+    }
+
+    private void Buscar()
+    {
+        var texto = textoBusqueda.Trim();
+        Navegacion.NavigateTo(Navegacion.GetUriWithQueryParameter("buscar",
+            texto.Length == 0 ? null : texto), replace: true);
+    }
+
+    private List<Perro> Filtrar()
+    {
+        var terminos = Busqueda?.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries) ?? [];
+        if (terminos.Length == 0)
+            return perros;
+
+        var comparacion = CultureInfo.GetCultureInfo("es-AR").CompareInfo;
+        return perros.Where(perro => terminos.All(termino =>
+            comparacion.IndexOf(perro.Nombre, termino,
+                CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0)).ToList();
+    }
+
+    private async Task PedirConfirmacionAsync(Perro perro)
+    {
+        seleccionado = perro;
+        await dialogo.AbrirAsync(perro.Nombre);
+    }
+
+    private async Task EliminarAsync()
+    {
+        if (eliminando || seleccionado is not { } perro)
+            return;
+
+        var version = versionCarga;
+        eliminando = true;
+        error = null;
+        try
+        {
+            await Api.EliminarAsync(perro.Id, cancelacion.Token);
+            if (version == versionCarga)
+                perros.Remove(perro);
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            eliminando = false;
+        }
+
+        seleccionado = null;
+        if (!cancelacion.IsCancellationRequested)
+            await dialogo.CerrarAsync();
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

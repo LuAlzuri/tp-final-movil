@@ -3,7 +3,9 @@
 @layout InicioLayout
 @using Microsoft.JSInterop
 @using Turnero.App.Turnos
+@using Turnero.App.Perros
 @inject TurnosApi Api
+@inject PerrosApi Perros
 @inject NavigationManager Navegacion
 @inject IJSRuntime Js
 @implements IDisposable
@@ -42,33 +44,6 @@
                         <strong>¿Reactivo?</strong>
                         <span class="badge rounded-pill @(ficha.Reactivo ? "text-bg-danger" : "text-bg-light")">@(ficha.Reactivo ? "Sí" : "No")</span>
                     </p>
-                    <details class="detalle-turno-recuadro">
-                        <summary class="fw-semibold">Más información del paciente</summary>
-                        <dl class="gestion-datos detalle-turno-datos mt-2 mb-0">
-                            <div><dt>Fecha de nacimiento</dt><dd>@ficha.FechaNacimiento.ToString("dd/MM/yyyy")</dd></div>
-                            <div><dt>Vacunación completa</dt><dd>@(ficha.CalVacCom ? "Sí" : "No")</dd></div>
-                        </dl>
-                        <h3 class="h6 fw-bold mt-2">Patologías</h3>
-                        @if (ficha.Patologias.Count == 0)
-                        {
-                            <p class="mb-0">Sin patologías registradas.</p>
-                        }
-                        else
-                        {
-                            <ul class="mb-0">
-                                @foreach (var patologia in ficha.Patologias)
-                                {
-                                    <li>
-                                        @patologia.Descripcion · @(patologia.Controlado ? "Controlada" : "Sin controlar")
-                                        @if (!string.IsNullOrWhiteSpace(patologia.Observacion))
-                                        {
-                                            <div class="small">@patologia.Observacion</div>
-                                        }
-                                    </li>
-                                }
-                            </ul>
-                        }
-                    </details>
                 }
                 else if (errorPaciente is not null)
                 {
@@ -78,6 +53,8 @@
                 {
                     <p class="small mb-0" role="status">Consultando ficha del paciente…</p>
                 }
+                <a class="btn gestion-principal rounded-pill fw-semibold mt-2"
+                   href="@($"veterinario/perros/{registro.PerroId}")">Más información del paciente</a>
             </section>
 
             <section class="mt-3" aria-labelledby="turno-servicios">
@@ -222,7 +199,7 @@
     private readonly CancellationTokenSource cancelacion = new();
     private readonly HashSet<int> serviciosRealizados = [];
     private Turno? turno;
-    private PacienteTurno? paciente;
+    private Perro? paciente;
     private EstadoTurno? destino;
     private string? error;
     private string? errorPaciente;
@@ -259,7 +236,7 @@
             StateHasChanged();
             try
             {
-                var ficha = await Api.ObtenerPacienteAsync(registro.PerroId, cancelacion.Token);
+                var ficha = await Perros.ObtenerAsync(registro.PerroId, cancelacion.Token);
                 if (version == versionCarga)
                     paciente = ficha;
             }

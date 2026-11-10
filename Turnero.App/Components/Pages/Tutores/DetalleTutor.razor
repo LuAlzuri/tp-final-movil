@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = Roles.Veterinario)]
 @layout InicioLayout
 @using Turnero.App.Tutores
+@using Turnero.App.Components.Pages.Perros
 @inject TutoresApi Api
 @implements IDisposable
 
@@ -25,6 +26,8 @@
                 <a class="btn gestion-principal gestion-accion rounded-pill fw-semibold"
                    href="@($"veterinario/tutores/{registro.Id}/editar")">Editar tutor</a>
             </article>
+
+            <PerrosDelTutor @key="registro.Id" TutorId="@registro.Id" />
 
             <section class="mt-4" aria-labelledby="telefonos-tutor">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">

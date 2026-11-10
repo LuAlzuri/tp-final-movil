@@ -1,0 +1,96 @@
+@page "/veterinario/perros/{Id:int}"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Turnero.App.Perros
+@inject PerrosApi Api
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo">Detalle del perro</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger mt-3" role="alert">@error</p>
+            <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+        }
+        else if (perro is { } ficha)
+        {
+            <article class="gestion-tarjeta mt-3">
+                <h2 class="gestion-nombre text-break">@ficha.Nombre</h2>
+                @if (Api.ResolverImagen(ficha.ImagenUrl) is { } imagen)
+                {
+                    <img src="@imagen" alt="@($"Foto de {ficha.Nombre}")" class="img-thumbnail mb-3"
+                         style="max-height: 12rem; object-fit: contain;" />
+                }
+                <dl class="gestion-datos">
+                    <dt>Fecha de nacimiento</dt>
+                    <dd>@ficha.FechaNacimiento.ToString("dd/MM/yyyy")</dd>
+                    <dt>¿Reactivo?</dt>
+                    <dd><span class="badge rounded-pill @(ficha.Reactivo ? "text-bg-danger" : "text-bg-light")">@(ficha.Reactivo ? "Sí" : "No")</span></dd>
+                    <dt>Vacunación completa</dt>
+                    <dd>@(ficha.CalVacCom ? "Sí" : "No")</dd>
+                </dl>
+                <h3 class="h6 fw-bold">Patologías</h3>
+                @if (ficha.Patologias.Count == 0)
+                {
+                    <p class="mb-0">Sin patologías registradas.</p>
+                }
+                else
+                {
+                    <ul class="mb-0">
+                        @foreach (var patologia in ficha.Patologias)
+                        {
+                            <li class="text-break">
+                                @patologia.Descripcion · @(patologia.Controlado ? "Controlada" : "Sin controlar")
+                                @if (!string.IsNullOrWhiteSpace(patologia.Observacion))
+                                {
+                                    <div class="small">@patologia.Observacion</div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </article>
+        }
+        else
+        {
+            <p class="mt-3 mb-0" role="status">Cargando ficha del perro…</p>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private Perro? perro;
+    private string? error;
+    private int versionCarga;
+
+    protected override Task OnParametersSetAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        perro = null;
+        error = null;
+        try
+        {
+            var ficha = await Api.ObtenerAsync(Id, cancelacion.Token);
+            if (version == versionCarga)
+                perro = ficha;
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}
