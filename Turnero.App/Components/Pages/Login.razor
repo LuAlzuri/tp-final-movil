@@ -1,0 +1,157 @@
+@page "/"
+@layout LoginLayout
+@using System.ComponentModel.DataAnnotations
+@using System.Net
+@using System.Text.Json
+@inject SesionService Sesion
+@inject NavigationManager Navegacion
+
+<main class="login-pantalla d-grid">
+    <div class="login-huellas" aria-hidden="true"></div>
+
+    <section class="login-panel text-center" aria-labelledby="titulo-login">
+        <h1 id="titulo-login" class="login-logo d-flex align-items-center justify-content-center fw-bold">
+            <svg class="login-logo-icono" viewBox="0 0 40 40" fill="none" aria-hidden="true" focusable="false">
+                <rect width="40" height="40" rx="12" fill="#153E42" />
+                <path d="M20 20c-2.8 0-4.5 2.3-6.7 4.3-1.8 1.7-2.5 3.6-1.5 5.3 1 1.8 3.2 2 5.3 1.2 1.1-.4 2-.7 2.9-.7s1.8.3 2.9.7c2.1.8 4.3.6 5.3-1.2 1-1.7.3-3.6-1.5-5.3C24.5 22.3 22.8 20 20 20Z" fill="#DDB6B8" />
+                <g fill="#D8F4F2">
+                    <ellipse cx="10.7" cy="18.4" rx="2.8" ry="3.7" transform="rotate(-28 10.7 18.4)" />
+                    <ellipse cx="16.4" cy="12.7" rx="2.8" ry="3.8" transform="rotate(-12 16.4 12.7)" />
+                    <ellipse cx="23.6" cy="12.7" rx="2.8" ry="3.8" transform="rotate(12 23.6 12.7)" />
+                    <ellipse cx="29.3" cy="18.4" rx="2.8" ry="3.7" transform="rotate(28 29.3 18.4)" />
+                </g>
+            </svg>
+            <span>VeteApp</span>
+        </h1>
+
+        @if (comprobando)
+        {
+            <p class="mt-4" role="status">Comprobando la sesión…</p>
+        }
+        else
+        {
+            <EditForm Model="credenciales" OnValidSubmit="IniciarSesionAsync"
+                      OnInvalidSubmit="LimpiarError" class="login-formulario d-grid mx-auto text-start" novalidate>
+                <DataAnnotationsValidator />
+
+                <div>
+                    <label for="login-correo" class="form-label fw-semibold">Correo electrónico</label>
+                    <InputText id="login-correo" type="email" class="form-control login-campo"
+                               @bind-Value="credenciales.Email" autocomplete="username" maxlength="254"
+                               placeholder="Tu correo" disabled="@enviando" />
+                    <ValidationMessage For="() => credenciales.Email" />
+                </div>
+
+                <div>
+                    <label for="login-contrasena" class="form-label fw-semibold">Contraseña</label>
+                    <div class="position-relative">
+                        <InputText id="login-contrasena" type="@(contrasenaVisible ? "text" : "password")"
+                                   class="form-control login-campo login-contrasena"
+                                   @bind-Value="credenciales.Contrasena" autocomplete="current-password"
+                                   autocapitalize="off" spellcheck="false" maxlength="128" disabled="@enviando" />
+                        <button type="button" class="btn login-visibilidad position-absolute"
+                                aria-controls="login-contrasena"
+                                aria-label="@(contrasenaVisible ? "Ocultar contraseña" : "Mostrar contraseña")"
+                                disabled="@enviando" @onclick="AlternarContrasena">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+                                 aria-hidden="true" focusable="false">
+                                <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z" />
+                                <circle cx="12" cy="12" r="2.5" />
+                                @if (contrasenaVisible)
+                                {
+                                    <path d="m4 4 16 16" />
+                                }
+                            </svg>
+                        </button>
+                    </div>
+                    <ValidationMessage For="() => credenciales.Contrasena" />
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn login-boton rounded-pill fw-semibold" disabled="@enviando">
+                        @(enviando ? "Ingresando…" : "Iniciar sesión")
+                    </button>
+                </div>
+
+                @if (error is not null)
+                {
+                    <p class="alert alert-danger mb-0 p-2" role="alert">@error</p>
+                }
+            </EditForm>
+        }
+    </section>
+</main>
+
+@code {
+    private readonly Credenciales credenciales = new();
+    private bool comprobando = true;
+    private bool enviando;
+    private bool contrasenaVisible;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var estado = await Sesion.GetAuthenticationStateAsync();
+        if (estado.User.Identity?.IsAuthenticated == true)
+            Navegacion.NavigateTo("/inicio", replace: true);
+
+        comprobando = false;
+    }
+
+    private void LimpiarError() => error = null;
+
+    private void AlternarContrasena() => contrasenaVisible = !contrasenaVisible;
+
+    private async Task IniciarSesionAsync()
+    {
+        if (enviando)
+            return;
+
+        enviando = true;
+        contrasenaVisible = false;
+        error = null;
+
+        try
+        {
+            await Sesion.IniciarSesionAsync(credenciales.Email, credenciales.Contrasena);
+            Navegacion.NavigateTo("/inicio", replace: true);
+        }
+        catch (HttpRequestException ex)
+        {
+            error = ex.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => "El correo o la contraseña son incorrectos.",
+                HttpStatusCode.Forbidden => "Tu cuenta no tiene permiso para iniciar sesión.",
+                HttpStatusCode.TooManyRequests => "Hubo demasiados intentos. Esperá unos minutos y volvé a intentar.",
+                null => "No se pudo conectar con la API. Revisá tu conexión y volvé a intentar.",
+                _ => "No se pudo iniciar sesión. Volvé a intentar en unos minutos."
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            error = "La conexión tardó demasiado. Volvé a intentar.";
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or NotSupportedException)
+        {
+            error = "No se pudo completar el inicio de sesión. Volvé a intentar.";
+        }
+        finally
+        {
+            credenciales.Contrasena = string.Empty;
+            enviando = false;
+        }
+    }
+
+    private sealed class Credenciales
+    {
+        [Required(ErrorMessage = "Ingresá tu correo electrónico.")]
+        [EmailAddress(ErrorMessage = "Ingresá un correo electrónico válido.")]
+        [StringLength(254, ErrorMessage = "El correo admite hasta 254 caracteres.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Ingresá tu contraseña.")]
+        [StringLength(128, ErrorMessage = "La contraseña admite hasta 128 caracteres.")]
+        public string Contrasena { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,20 @@
+@page "/inicio"
+@attribute [Authorize]
+@inject SesionService Sesion
+@inject NavigationManager Navegacion
+
+<h1 class="h3">Turnero de peluquería canina</h1>
+
+<AuthorizeView>
+    <p class="mb-3">Sesión iniciada como @(context.User.Identity?.Name).</p>
+</AuthorizeView>
+
+<button type="button" class="btn btn-outline-dark" @onclick="CerrarSesionAsync">Cerrar sesión</button>
+
+@code {
+    private async Task CerrarSesionAsync()
+    {
+        await Sesion.CerrarSesionAsync();
+        Navegacion.NavigateTo("/", replace: true);
+    }
+}

@@ -1,0 +1,22 @@
+<Router AppAssembly="typeof(MauiProgram).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <Authorizing>
+                <p role="status">Comprobando la sesión…</p>
+            </Authorizing>
+            <NotAuthorized Context="estado">
+                @if (estado.User.Identity?.IsAuthenticated == true)
+                {
+                    <p class="alert alert-warning" role="alert">Tu cuenta no tiene permiso para acceder a esta sección.</p>
+                }
+                else
+                {
+                    <p class="alert alert-warning" role="alert">
+                        <a class="alert-link" href="">Iniciá sesión</a> para acceder a esta sección.
+                    </p>
+                }
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>
