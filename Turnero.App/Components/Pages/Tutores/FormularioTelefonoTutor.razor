@@ -1,0 +1,113 @@
+@page "/veterinario/tutores/{TutorId:int}/telefonos/nuevo"
+@page "/veterinario/tutores/{TutorId:int}/telefonos/{TelefonoId:int}/editar"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Microsoft.JSInterop
+@using Turnero.App.Tutores
+@inject TutoresApi Api
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo mb-3">@(TelefonoId.HasValue ? "Editar teléfono" : "Agregar teléfono")</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger" role="alert">@error</p>
+        }
+        @if (datos is { } formulario)
+        {
+            <EditForm Model="formulario" class="gestion-tarjeta gestion-formulario d-grid gap-3"
+                      OnValidSubmit="GuardarAsync" novalidate>
+                <DataAnnotationsValidator />
+                <CamposTelefonoTutor Datos="@formulario" Prefijo="telefono-tutor" />
+                <div class="d-flex justify-content-end flex-wrap gap-2">
+                    <button type="button" class="btn gestion-neutro rounded-pill" disabled="@guardando"
+                            @onclick="VolverAsync">Cancelar</button>
+                    <button type="submit" class="btn gestion-principal rounded-pill fw-semibold" disabled="@guardando">
+                        @(guardando ? "Guardando…" : "Guardar")
+                    </button>
+                </div>
+            </EditForm>
+        }
+        else if (error is null)
+        {
+            <p class="mb-0" role="status">Cargando teléfono…</p>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public int TutorId { get; set; }
+    [Parameter] public int? TelefonoId { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private DatosTelefonoTutor? datos;
+    private string? error;
+    private bool guardando;
+    private int versionCarga;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var version = ++versionCarga;
+        datos = null;
+        error = null;
+        if (TelefonoId is not int id)
+        {
+            datos = new();
+            return;
+        }
+
+        try
+        {
+            var telefono = await Api.ObtenerTelefonoAsync(TutorId, id, cancelacion.Token);
+            if (version == versionCarga)
+                datos = new DatosTelefonoTutor { NombreProp = telefono.NombreProp, NroTel = telefono.NroTel };
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (guardando || datos is not { } formulario)
+            return;
+
+        var version = versionCarga;
+        guardando = true;
+        error = null;
+        try
+        {
+            await Api.GuardarTelefonoAsync(TutorId, TelefonoId, formulario, cancelacion.Token);
+            if (version == versionCarga && !cancelacion.IsCancellationRequested)
+                await VolverAsync();
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task VolverAsync()
+    {
+        if (!await Js.InvokeAsync<bool>("veteApp.volver"))
+            Navegacion.NavigateTo($"/veterinario/tutores/{TutorId}", replace: true);
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

@@ -1,0 +1,140 @@
+@page "/veterinario/tutores/{Id:int}"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Turnero.App.Tutores
+@inject TutoresApi Api
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo">Detalle del tutor</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger mb-0" role="alert">@error</p>
+        }
+        @if (tutor is { } registro)
+        {
+            <article class="gestion-tarjeta mt-3">
+                <h2 class="gestion-nombre">@registro.NombreCompleto</h2>
+                <dl class="gestion-datos">
+                    <dt>Correo electrónico</dt>
+                    <dd>@registro.Email</dd>
+                    <dt>Usuario</dt>
+                    <dd>@registro.Username</dd>
+                </dl>
+                <a class="btn gestion-principal gestion-accion rounded-pill fw-semibold"
+                   href="@($"veterinario/tutores/{registro.Id}/editar")">Editar tutor</a>
+            </article>
+
+            <section class="mt-4" aria-labelledby="telefonos-tutor">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <h2 id="telefonos-tutor" class="gestion-nombre mb-0">Teléfonos de contacto</h2>
+                    <a class="btn gestion-neutro rounded-pill fw-semibold"
+                       href="@($"veterinario/tutores/{registro.Id}/telefonos/nuevo")">Agregar teléfono</a>
+                </div>
+                @if (registro.Telefonos.Count == 0)
+                {
+                    <p class="mt-3 mb-0" role="status">Este tutor no tiene teléfonos registrados.</p>
+                }
+                else
+                {
+                    <ul class="gestion-listado list-unstyled d-grid mt-3 mb-0">
+                        @foreach (var telefono in registro.Telefonos)
+                        {
+                            <li class="gestion-tarjeta" @key="telefono.Id">
+                                <h3 class="h6 fw-bold text-break">@telefono.NombreProp</h3>
+                                <p class="text-break">@telefono.NroTel</p>
+                                <div class="d-flex flex-wrap justify-content-between gap-2">
+                                    <button type="button" class="btn btn-danger gestion-eliminar gestion-accion rounded-pill fw-semibold"
+                                            aria-label="@($"Eliminar teléfono {telefono.NroTel}")" disabled="@eliminando"
+                                            @onclick="() => PedirConfirmacionAsync(telefono)">Eliminar</button>
+                                    <a class="btn gestion-principal gestion-accion rounded-pill fw-semibold"
+                                       href="@($"veterinario/tutores/{registro.Id}/telefonos/{telefono.Id}/editar")"
+                                       aria-label="@($"Editar teléfono {telefono.NroTel}")">Editar</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+        else if (error is null)
+        {
+            <p class="mb-0" role="status">Cargando tutor…</p>
+        }
+    </div>
+</section>
+
+<DialogoBaja @ref="dialogo" Titulo="¿Eliminar teléfono?" Ocupado="@eliminando" Confirmar="EliminarTelefonoAsync" />
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private Tutor? tutor;
+    private string? error;
+    private int versionCarga;
+    private bool eliminando;
+    private TelefonoTutor? seleccionado;
+    private DialogoBaja dialogo = default!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var version = ++versionCarga;
+        tutor = null;
+        error = null;
+        seleccionado = null;
+        try
+        {
+            var registro = await Api.ObtenerAsync(Id, cancelacion.Token);
+            if (version == versionCarga)
+                tutor = registro;
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    private async Task PedirConfirmacionAsync(TelefonoTutor telefono)
+    {
+        seleccionado = telefono;
+        await dialogo.AbrirAsync(telefono.NroTel);
+    }
+
+    private async Task EliminarTelefonoAsync()
+    {
+        if (eliminando || tutor is not { } registro || seleccionado is not { } telefono)
+            return;
+
+        eliminando = true;
+        error = null;
+        try
+        {
+            await Api.EliminarTelefonoAsync(registro.Id, telefono.Id, cancelacion.Token);
+            registro.Telefonos.Remove(telefono);
+        }
+        catch (GestionApiException ex)
+        {
+            if (ReferenceEquals(tutor, registro))
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            eliminando = false;
+        }
+
+        seleccionado = null;
+        if (!cancelacion.IsCancellationRequested)
+            await dialogo.CerrarAsync();
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

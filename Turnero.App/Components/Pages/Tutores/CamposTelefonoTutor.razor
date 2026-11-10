@@ -1,0 +1,19 @@
+@using Turnero.App.Tutores
+
+<div>
+    <label class="form-label fw-semibold" for="@($"{Prefijo}-contacto")">Nombre del contacto</label>
+    <InputText id="@($"{Prefijo}-contacto")" class="form-control" maxlength="100"
+               placeholder="Ej. Lucía García" @bind-Value="Datos.NombreProp" />
+    <ValidationMessage For="() => Datos.NombreProp" />
+</div>
+<div>
+    <label class="form-label fw-semibold" for="@($"{Prefijo}-numero")">Número de teléfono</label>
+    <InputText id="@($"{Prefijo}-numero")" class="form-control" type="tel" maxlength="20"
+               placeholder="Ej. +54 9 11 1234 5678" @bind-Value="Datos.NroTel" />
+    <ValidationMessage For="() => Datos.NroTel" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DatosTelefonoTutor Datos { get; set; } = default!;
+    [Parameter, EditorRequired] public string Prefijo { get; set; } = string.Empty;
+}
