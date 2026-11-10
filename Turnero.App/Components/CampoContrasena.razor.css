@@ -1,0 +1,28 @@
+.campo-contrasena ::deep input {
+    min-height: 3rem;
+    padding-inline-end: 3.15rem;
+}
+
+.campo-contrasena ::deep input::-ms-reveal {
+    display: none;
+}
+
+.campo-contrasena-ojo {
+    display: grid;
+    place-items: center;
+    inset-block: 2px;
+    inset-inline-end: 2px;
+    width: 2.75rem;
+    padding: 0;
+    border: 1px solid #a5c9c9;
+    border-radius: .375rem;
+    color: #214d50;
+    background-color: #eff9f8;
+}
+
+.campo-contrasena-ojo:hover,
+.campo-contrasena-ojo:focus-visible {
+    border-color: #669797;
+    color: #14373a;
+    background-color: rgb(216 244 242 / 62%);
+}

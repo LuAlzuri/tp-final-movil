@@ -44,27 +44,8 @@
 
                 <div>
                     <label for="login-contrasena" class="form-label fw-semibold">Contraseña</label>
-                    <div class="position-relative">
-                        <InputText id="login-contrasena" type="@(contrasenaVisible ? "text" : "password")"
-                                   class="form-control login-campo login-contrasena"
-                                   @bind-Value="credenciales.Contrasena" autocomplete="current-password"
-                                   autocapitalize="off" spellcheck="false" maxlength="128" disabled="@enviando" />
-                        <button type="button" class="btn login-visibilidad position-absolute"
-                                aria-controls="login-contrasena"
-                                aria-label="@(contrasenaVisible ? "Ocultar contraseña" : "Mostrar contraseña")"
-                                disabled="@enviando" @onclick="AlternarContrasena">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                                 aria-hidden="true" focusable="false">
-                                <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z" />
-                                <circle cx="12" cy="12" r="2.5" />
-                                @if (contrasenaVisible)
-                                {
-                                    <path d="m4 4 16 16" />
-                                }
-                            </svg>
-                        </button>
-                    </div>
+                    <CampoContrasena Id="login-contrasena" InputClass="login-campo" Autocomplete="current-password"
+                                     @bind-Value="credenciales.Contrasena" Disabled="@enviando" />
                     <ValidationMessage For="() => credenciales.Contrasena" />
                 </div>
 
@@ -87,7 +68,6 @@
     private readonly Credenciales credenciales = new();
     private bool comprobando = true;
     private bool enviando;
-    private bool contrasenaVisible;
     private string? error;
 
     protected override async Task OnInitializedAsync()
@@ -101,20 +81,17 @@
 
     private void LimpiarError() => error = null;
 
-    private void AlternarContrasena() => contrasenaVisible = !contrasenaVisible;
-
     private async Task IniciarSesionAsync()
     {
         if (enviando)
             return;
 
         enviando = true;
-        contrasenaVisible = false;
         error = null;
 
         try
         {
-            await Sesion.IniciarSesionAsync(credenciales.Email, credenciales.Contrasena);
+            await Sesion.IniciarSesionAsync(credenciales.Email, credenciales.Contrasena!);
             Navegacion.NavigateTo("/inicio", replace: true);
         }
         catch (HttpRequestException ex)
@@ -152,6 +129,6 @@
 
         [Required(ErrorMessage = "Ingresá tu contraseña.")]
         [StringLength(128, ErrorMessage = "La contraseña admite hasta 128 caracteres.")]
-        public string Contrasena { get; set; } = string.Empty;
+        public string? Contrasena { get; set; }
     }
 }

@@ -1,0 +1,161 @@
+@page "/administracion/veterinarios/nuevo"
+@page "/administracion/veterinarios/{Id:int}/editar"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using Microsoft.JSInterop
+@using Turnero.App.Veterinarios
+@inject VeterinariosApi Api
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+
+<section class="veterinarios-pantalla">
+    <div class="veterinarios-panel">
+        <h1 class="veterinarios-titulo mb-3">@(Id.HasValue ? "Editar veterinario" : "Agregar veterinario")</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger" role="alert">@error</p>
+        }
+
+        @if (datos is { } formulario)
+        {
+            <EditForm Model="formulario" class="veterinarios-tarjeta veterinarios-formulario d-grid gap-3"
+                      OnValidSubmit="GuardarAsync" novalidate>
+                <DataAnnotationsValidator />
+                <div>
+                    <label class="form-label fw-semibold" for="veterinario-nombre">Nombre</label>
+                    <InputText id="veterinario-nombre" class="form-control" maxlength="100"
+                               placeholder="Ej. Lucía" @bind-Value="formulario.Nombre" />
+                    <ValidationMessage For="() => formulario.Nombre" />
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" for="veterinario-apellido">Apellido</label>
+                    <InputText id="veterinario-apellido" class="form-control" maxlength="100"
+                               placeholder="Ej. García" @bind-Value="formulario.Apellido" />
+                    <ValidationMessage For="() => formulario.Apellido" />
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" for="veterinario-username">Usuario</label>
+                    <InputText id="veterinario-username" class="form-control" maxlength="100"
+                               placeholder="Ej. lucia.garcia" @bind-Value="formulario.Username" />
+                    <ValidationMessage For="() => formulario.Username" />
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" for="veterinario-email">Correo electrónico</label>
+                    <InputText id="veterinario-email" class="form-control" type="email" maxlength="254"
+                               placeholder="Ej. lucia@ejemplo.com" @bind-Value="formulario.Email" />
+                    <ValidationMessage For="() => formulario.Email" />
+                </div>
+                <div>
+                    <label class="form-label fw-semibold" for="veterinario-matricula">Matrícula</label>
+                    <InputNumber id="veterinario-matricula" class="form-control" inputmode="numeric"
+                                 min="1" max="99999" placeholder="Ej. 12345" @bind-Value="formulario.Matricula"
+                                 DisplayName="matrícula" ParsingErrorMessage="Ingresá un número entero para la {0}." />
+                    <ValidationMessage For="() => formulario.Matricula" />
+                </div>
+                @if (formulario is DatosAltaVeterinario alta)
+                {
+                    <div>
+                        <label class="form-label fw-semibold" for="veterinario-contrasena">Contraseña inicial</label>
+                        <CampoContrasena Id="veterinario-contrasena" NombreCampo="contraseña inicial"
+                                         DescribedBy="ayuda-contrasena" Disabled="@guardando"
+                                         @bind-Value="alta.Contrasena" />
+                        <div id="ayuda-contrasena" class="form-text">Entre 12 y 128 caracteres.</div>
+                        <ValidationMessage For="() => alta.Contrasena" />
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold" for="veterinario-repetir-contrasena">Repetir contraseña</label>
+                        <CampoContrasena Id="veterinario-repetir-contrasena" NombreCampo="repetición de contraseña"
+                                         Disabled="@guardando" @bind-Value="alta.RepetirContrasena" />
+                        <ValidationMessage For="() => alta.RepetirContrasena" />
+                    </div>
+                }
+                <div class="d-flex justify-content-end flex-wrap gap-2">
+                    <button type="button" class="btn veterinarios-neutro rounded-pill" disabled="@guardando"
+                            @onclick="VolverAsync">Cancelar</button>
+                    <button type="submit" class="btn veterinarios-principal rounded-pill fw-semibold" disabled="@guardando">
+                        @(guardando ? "Guardando…" : "Guardar")
+                    </button>
+                </div>
+            </EditForm>
+        }
+        else if (error is null)
+        {
+            <p class="mb-0" role="status">Cargando veterinario…</p>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private DatosVeterinario? datos;
+    private string? error;
+    private bool guardando;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        datos = null;
+        error = null;
+        if (Id is not int id)
+        {
+            datos = new DatosAltaVeterinario();
+            return;
+        }
+
+        try
+        {
+            var veterinario = await Api.ObtenerAsync(id);
+            datos = new()
+            {
+                Nombre = veterinario.Nombre,
+                Apellido = veterinario.Apellido,
+                Username = veterinario.Username,
+                Email = veterinario.Email,
+                Matricula = veterinario.Matricula
+            };
+        }
+        catch (VeterinariosException ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (guardando || datos is not { } formulario)
+            return;
+
+        error = null;
+        guardando = true;
+        try
+        {
+            if (formulario is DatosAltaVeterinario alta)
+            {
+                await Api.CrearAsync(alta);
+                alta.Contrasena = null;
+                alta.RepetirContrasena = null;
+            }
+            else if (Id is int id)
+            {
+                await Api.ModificarAsync(id, formulario);
+            }
+
+            await VolverAsync();
+        }
+        catch (VeterinariosException ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task VolverAsync()
+    {
+        if (!await Js.InvokeAsync<bool>("veteApp.volver"))
+            Navegacion.NavigateTo("/administracion/veterinarios", replace: true);
+    }
+}

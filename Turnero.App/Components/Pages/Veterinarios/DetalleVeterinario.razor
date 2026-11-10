@@ -1,0 +1,57 @@
+@page "/administracion/veterinarios/{Id:int}"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using Turnero.App.Veterinarios
+@inject VeterinariosApi Api
+
+<section class="veterinarios-pantalla">
+    <div class="veterinarios-panel">
+        <h1 class="veterinarios-titulo">Detalle del veterinario</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger mb-0" role="alert">@error</p>
+        }
+        else if (veterinario is null)
+        {
+            <p class="mb-0" role="status">Cargando veterinario…</p>
+        }
+        else
+        {
+            <article class="veterinarios-tarjeta mt-3">
+                <h2 class="veterinarios-nombre">@veterinario.NombreCompleto</h2>
+                <dl class="veterinarios-datos">
+                    <dt>Matrícula</dt>
+                    <dd>@veterinario.Matricula</dd>
+                    <dt>Correo electrónico</dt>
+                    <dd>@veterinario.Email</dd>
+                    <dt>Usuario</dt>
+                    <dd>@veterinario.Username</dd>
+                </dl>
+                <a class="btn veterinarios-principal veterinarios-accion rounded-pill fw-semibold"
+                   href="@($"administracion/veterinarios/{veterinario.Id}/editar")">Editar veterinario</a>
+            </article>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Veterinario? veterinario;
+    private string? error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        veterinario = null;
+        error = null;
+        try
+        {
+            veterinario = await Api.ObtenerAsync(Id);
+        }
+        catch (VeterinariosException ex)
+        {
+            error = ex.Message;
+        }
+    }
+}

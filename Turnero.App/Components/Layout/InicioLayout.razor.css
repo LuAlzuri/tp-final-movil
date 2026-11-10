@@ -21,7 +21,7 @@
 }
 
 .inicio-menu-boton,
-.inicio-salida {
+.inicio-atajo {
     display: grid;
     flex: 0 0 auto;
     place-items: center;
@@ -39,8 +39,8 @@
 
 .inicio-menu-boton:hover,
 .inicio-menu-boton:focus-visible,
-.inicio-salida:hover,
-.inicio-salida:focus-visible {
+.inicio-atajo:hover,
+.inicio-atajo:focus-visible {
     color: #153e42;
     background: rgb(255 255 255 / 48%);
 }
@@ -99,4 +99,12 @@
     padding: .55rem 0 max(.55rem, env(safe-area-inset-bottom));
     background: #a1e4e4;
     box-shadow: 0 -2px 8px rgb(21 62 66 / 8%);
+}
+
+.inicio-atajo.flex-fill {
+    border-radius: 0;
+}
+
+.inicio-atajo + .inicio-atajo {
+    border-inline-start: 1px solid #72c4c5;
 }

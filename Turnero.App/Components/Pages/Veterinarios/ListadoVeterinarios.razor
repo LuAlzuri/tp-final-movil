@@ -1,0 +1,188 @@
+@page "/administracion/veterinarios"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using System.Globalization
+@using Microsoft.JSInterop
+@using Turnero.App.Veterinarios
+@inject VeterinariosApi Api
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="veterinarios-pantalla">
+    <div class="veterinarios-panel">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h1 class="veterinarios-titulo veterinarios-titulo-listado mb-0">Veterinarios</h1>
+            <a class="btn veterinarios-neutro rounded-pill fw-semibold" href="administracion/veterinarios/nuevo">
+                Agregar veterinario
+            </a>
+        </div>
+
+        <form class="veterinarios-busqueda d-flex gap-2 mt-3" role="search"
+              @onsubmit="Buscar" @onsubmit:preventDefault>
+            <label for="buscar-veterinario" class="visually-hidden">Buscar veterinario por nombre o apellido</label>
+            <input id="buscar-veterinario" class="form-control rounded-pill" type="search"
+                   placeholder="Buscar veterinario…" maxlength="200" @bind="textoBusqueda" @bind:event="oninput" />
+            <button type="submit" class="btn veterinarios-principal veterinarios-buscar rounded-pill fw-semibold">Buscar</button>
+        </form>
+
+        @if (error is not null)
+        {
+            <p class="alert alert-danger mt-3 mb-0" role="alert">@error</p>
+        }
+
+        @if (cargando)
+        {
+            <p class="mt-4 mb-0" role="status">Cargando veterinarios…</p>
+        }
+        else if (errorCarga)
+        {
+            <button class="btn veterinarios-neutro rounded-pill mt-3" @onclick="CargarAsync">Reintentar</button>
+        }
+        else
+        {
+            var resultados = Filtrar();
+            if (resultados.Count == 0)
+            {
+                <p class="mt-4 mb-0" role="status">@(string.IsNullOrWhiteSpace(Busqueda)
+                    ? "Todavía no hay veterinarios registrados."
+                    : "No encontramos veterinarios con ese nombre o apellido.")</p>
+            }
+            else
+            {
+                <ul class="veterinarios-listado list-unstyled d-grid mt-4 mb-0">
+                    @foreach (var veterinario in resultados)
+                    {
+                        <li class="veterinarios-tarjeta" @key="veterinario.Id">
+                            <h2 class="veterinarios-nombre">@veterinario.NombreCompleto</h2>
+                            <div class="d-flex flex-wrap justify-content-between gap-2">
+                                <button type="button" class="btn btn-danger veterinarios-eliminar veterinarios-accion rounded-pill fw-semibold"
+                                        aria-label="@($"Eliminar a {veterinario.NombreCompleto}")"
+                                        disabled="@eliminando" @onclick="() => PedirConfirmacionAsync(veterinario)">Eliminar</button>
+                                <a class="btn veterinarios-principal veterinarios-accion rounded-pill fw-semibold"
+                                   href="@($"administracion/veterinarios/{veterinario.Id}")"
+                                   aria-label="@($"Detalle de {veterinario.NombreCompleto}")">Detalle</a>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        }
+    </div>
+</section>
+
+<dialog @ref="dialogo" class="veterinarios-dialogo" aria-labelledby="titulo-baja" aria-describedby="aviso-baja">
+    <div class="veterinarios-aviso mx-auto" aria-hidden="true">!</div>
+    <h2 id="titulo-baja" class="h5 fw-bold">¿Eliminar veterinario?</h2>
+    <p id="aviso-baja">Se dará de baja a <strong>@seleccionado?.NombreCompleto</strong>.
+        Esta acción es irreversible desde la app.</p>
+    <div class="d-flex justify-content-center flex-wrap gap-2">
+        <button type="button" class="btn veterinarios-neutro rounded-pill" autofocus
+                disabled="@eliminando" @onclick="CerrarConfirmacionAsync">Cancelar</button>
+        <button type="button" class="btn btn-danger veterinarios-eliminar rounded-pill"
+                disabled="@eliminando" @onclick="EliminarAsync">@(eliminando ? "Eliminando…" : "Sí, eliminar")</button>
+    </div>
+</dialog>
+
+@code {
+    [SupplyParameterFromQuery(Name = "buscar")]
+    public string? Busqueda { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<Veterinario> veterinarios = [];
+    private string textoBusqueda = string.Empty;
+    private string? error;
+    private bool cargando = true;
+    private bool errorCarga;
+    private bool eliminando;
+    private Veterinario? seleccionado;
+    private ElementReference dialogo;
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    protected override void OnParametersSet() => textoBusqueda = Busqueda ?? string.Empty;
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+        errorCarga = false;
+        try
+        {
+            veterinarios = await Api.ListarAsync(cancelacion.Token);
+        }
+        catch (VeterinariosException ex)
+        {
+            error = ex.Message;
+            errorCarga = true;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void Buscar()
+    {
+        var texto = textoBusqueda.Trim();
+        Navegacion.NavigateTo(Navegacion.GetUriWithQueryParameter("buscar",
+            texto.Length == 0 ? null : texto), replace: true);
+    }
+
+    private List<Veterinario> Filtrar()
+    {
+        var terminos = Busqueda?.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries) ?? [];
+        if (terminos.Length == 0)
+            return veterinarios;
+
+        var comparacion = CultureInfo.GetCultureInfo("es-AR").CompareInfo;
+        return veterinarios.Where(veterinario => terminos.All(termino =>
+            comparacion.IndexOf(veterinario.NombreCompleto, termino,
+                CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0)).ToList();
+    }
+
+    private async Task PedirConfirmacionAsync(Veterinario veterinario)
+    {
+        seleccionado = veterinario;
+        await Js.InvokeVoidAsync("veteApp.abrirConfirmacion", dialogo);
+    }
+
+    private async Task CerrarConfirmacionAsync()
+    {
+        await Js.InvokeVoidAsync("veteApp.cerrarConfirmacion", dialogo);
+        seleccionado = null;
+    }
+
+    private async Task EliminarAsync()
+    {
+        if (eliminando || seleccionado is not { } veterinario)
+            return;
+
+        eliminando = true;
+        error = null;
+        try
+        {
+            await Api.EliminarAsync(veterinario.Id, cancelacion.Token);
+            veterinarios.Remove(veterinario);
+        }
+        catch (VeterinariosException ex)
+        {
+            error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            eliminando = false;
+        }
+
+        if (!cancelacion.IsCancellationRequested)
+            await CerrarConfirmacionAsync();
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

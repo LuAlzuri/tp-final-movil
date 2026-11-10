@@ -1,0 +1,175 @@
+.veterinarios-pantalla {
+    padding: clamp(1rem, 6vw, 1.75rem) clamp(.85rem, 5vw, 1.4rem);
+}
+
+.veterinarios-panel {
+    padding: clamp(.75rem, 4.3vw, 1.25rem);
+    border: 1px solid #d9e4e3;
+    border-radius: 1.3rem;
+    background: #e6eceb;
+    box-shadow: 0 5px 16px rgb(21 62 66 / 10%);
+}
+
+.veterinarios-titulo,
+.veterinarios-nombre {
+    color: #111;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.veterinarios-titulo {
+    font-size: clamp(1.05rem, 5vw, 1.4rem);
+}
+
+.veterinarios-titulo-listado {
+    font-size: clamp(1.2rem, 5.6vw, 1.55rem);
+}
+
+.veterinarios-nombre {
+    margin-bottom: .75rem;
+    font-size: clamp(1rem, 4.8vw, 1.25rem);
+}
+
+.veterinarios-listado {
+    gap: .8rem;
+}
+
+.veterinarios-listado .veterinarios-nombre {
+    margin-bottom: 1.5rem;
+}
+
+.veterinarios-tarjeta {
+    padding: clamp(.7rem, 4vw, 1rem);
+    border: 1px solid #e0ebea;
+    border-radius: 1.05rem;
+    background: #fff;
+    box-shadow: 0 3px 10px rgb(21 62 66 / 9%);
+}
+
+.veterinarios-busqueda input {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    padding-inline: .65rem;
+}
+
+.veterinarios-buscar {
+    flex: 0 0 clamp(4.5rem, 22vw, 5.75rem);
+}
+
+.veterinarios-accion {
+    min-width: 6.25rem;
+    max-width: 100%;
+}
+
+@media (max-width: 300px) {
+    .veterinarios-busqueda input {
+        padding-inline: .4rem;
+    }
+
+    .veterinarios-busqueda input::placeholder {
+        font-size: .75rem;
+    }
+}
+
+.veterinarios-pantalla .form-control,
+.veterinarios-dialogo .btn,
+.veterinarios-pantalla .btn {
+    min-height: 2.75rem;
+}
+
+.veterinarios-pantalla .btn,
+.veterinarios-dialogo .btn {
+    display: inline-grid;
+    place-items: center;
+    padding-inline: clamp(.6rem, 3vw, 1rem);
+    font-size: .875rem;
+}
+
+.veterinarios-accion:not(.veterinarios-eliminar) {
+    padding-inline: 1.25rem;
+}
+
+.veterinarios-listado .veterinarios-accion {
+    flex: 0 0 min(6.25rem, calc((100% - .5rem) / 2));
+    min-width: 0;
+    padding-inline: .6rem;
+}
+
+.veterinarios-principal {
+    --bs-btn-color: #153e42;
+    --bs-btn-bg: #77d8d9;
+    --bs-btn-border-color: #56b9bb;
+    --bs-btn-hover-color: #102f32;
+    --bs-btn-hover-bg: #61ced1;
+    --bs-btn-hover-border-color: #479c9e;
+    --bs-btn-active-color: #102f32;
+    --bs-btn-active-bg: #50bec1;
+    --bs-btn-active-border-color: #479c9e;
+    --bs-btn-disabled-color: #153e42;
+    --bs-btn-disabled-bg: #77d8d9;
+    --bs-btn-disabled-border-color: #56b9bb;
+    --bs-btn-focus-shadow-rgb: 33, 86, 90;
+}
+
+.veterinarios-neutro {
+    --bs-btn-color: #153e42;
+    --bs-btn-bg: #fff;
+    --bs-btn-border-color: #b8d3d1;
+    --bs-btn-hover-color: #153e42;
+    --bs-btn-hover-bg: #e7f6f5;
+    --bs-btn-hover-border-color: #83b8b6;
+    --bs-btn-active-color: #153e42;
+    --bs-btn-active-bg: #d4edeb;
+    --bs-btn-active-border-color: #83b8b6;
+    --bs-btn-disabled-color: #153e42;
+    --bs-btn-disabled-bg: #fff;
+    --bs-btn-disabled-border-color: #b8d3d1;
+    --bs-btn-focus-shadow-rgb: 33, 86, 90;
+}
+
+.veterinarios-eliminar {
+    --bs-btn-bg: #b02a37;
+    --bs-btn-border-color: #b02a37;
+    --bs-btn-hover-bg: #98232e;
+    --bs-btn-hover-border-color: #98232e;
+}
+
+.veterinarios-datos dd {
+    overflow-wrap: anywhere;
+}
+
+.veterinarios-formulario .validation-message {
+    margin-top: .25rem;
+    color: #842029;
+    font-size: .875rem;
+}
+
+.veterinarios-dialogo {
+    width: min(calc(100% - 2rem), 23rem);
+    max-height: calc(100dvh - 2rem);
+    padding: 1.25rem;
+    overflow-y: auto;
+    border: 1px solid #d9e4e3;
+    border-radius: 1.2rem;
+    color: #153e42;
+    text-align: center;
+    box-shadow: 0 16px 42px rgb(21 62 66 / 24%);
+}
+
+.veterinarios-dialogo::backdrop {
+    background: rgb(21 62 66 / 45%);
+}
+
+.veterinarios-aviso {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: .75rem;
+    border-radius: 50%;
+    background: #f9e2e4;
+    color: #842029;
+    font-size: 1.65rem;
+    font-weight: 700;
+}

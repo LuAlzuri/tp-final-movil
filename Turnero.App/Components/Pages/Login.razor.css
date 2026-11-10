@@ -74,34 +74,6 @@
     box-shadow: 0 0 0 .2rem rgb(33 77 80 / 22%);
 }
 
-.login-panel ::deep .login-contrasena {
-    padding-inline-end: 3.15rem;
-}
-
-.login-panel ::deep .login-contrasena::-ms-reveal {
-    display: none;
-}
-
-.login-visibilidad {
-    display: grid;
-    place-items: center;
-    inset-block: 2px;
-    inset-inline-end: 2px;
-    width: 2.75rem;
-    padding: 0;
-    border: 1px solid #a5c9c9;
-    border-radius: .375rem;
-    color: #214d50;
-    background-color: #eff9f8;
-}
-
-.login-visibilidad:hover,
-.login-visibilidad:focus-visible {
-    border-color: #669797;
-    color: #14373a;
-    background-color: rgb(216 244 242 / 62%);
-}
-
 .login-boton {
     --bs-btn-color: #111;
     --bs-btn-bg: #bd9699;

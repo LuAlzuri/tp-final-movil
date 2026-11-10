@@ -72,15 +72,60 @@ public sealed class SesionService(HttpClient api, ISecureStorage almacenamiento)
         await acceso.WaitAsync();
         try
         {
-            almacenamiento.Remove(ClaveSesion);
-            LimpiarEstado();
-            restaurada = true;
-            NotifyAuthenticationStateChanged(Task.FromResult(estado));
+            QuitarSesion();
         }
         finally
         {
             acceso.Release();
         }
+    }
+
+    internal async Task<HttpResponseMessage> EnviarAutenticadoAsync(HttpRequestMessage solicitud, CancellationToken ct)
+    {
+        var baseApi = api.BaseAddress!;
+        var destino = new Uri(baseApi, solicitud.RequestUri!);
+        if (!string.Equals(destino.GetLeftPart(UriPartial.Authority),
+            baseApi.GetLeftPart(UriPartial.Authority), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("La solicitud debe dirigirse a la API de VeteApp.", nameof(solicitud));
+        }
+
+        SesionGuardada guardada;
+        await acceso.WaitAsync(ct);
+        try
+        {
+            if (sesionActual is not { } actual || actual.ExpiraUtc <= DateTimeOffset.UtcNow)
+                throw new HttpRequestException("La sesión venció.", null, HttpStatusCode.Unauthorized);
+
+            guardada = actual;
+        }
+        finally
+        {
+            acceso.Release();
+        }
+
+        solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", guardada.Token);
+        var respuesta = await api.SendAsync(solicitud, ct);
+        if (respuesta.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            await acceso.WaitAsync();
+            try
+            {
+                if (ReferenceEquals(sesionActual, guardada))
+                    QuitarSesion();
+            }
+            catch
+            {
+                respuesta.Dispose();
+                throw;
+            }
+            finally
+            {
+                acceso.Release();
+            }
+        }
+
+        return respuesta;
     }
 
     private async Task RestaurarAsync()
@@ -179,6 +224,14 @@ public sealed class SesionService(HttpClient api, ISecureStorage almacenamiento)
         vencimiento = null;
         sesionActual = null;
         estado = Anonimo;
+    }
+
+    private void QuitarSesion()
+    {
+        almacenamiento.Remove(ClaveSesion);
+        LimpiarEstado();
+        restaurada = true;
+        NotifyAuthenticationStateChanged(Task.FromResult(estado));
     }
 
     public void Dispose() => vencimiento?.Dispose();
