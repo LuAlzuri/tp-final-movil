@@ -36,8 +36,18 @@ public sealed class ApiGestion(SesionService sesion)
                 var mensaje = respuesta.StatusCode switch
                 {
                     HttpStatusCode.Unauthorized => "Tu sesión venció. Volvé a iniciar sesión.",
-                    HttpStatusCode.Forbidden => recurso == "veterinarios" ? "Tu cuenta no tiene permiso para gestionar veterinarios." : "Tu cuenta no tiene permiso para gestionar catálogos.",
-                    HttpStatusCode.NotFound => recurso == "veterinarios" ? "El veterinario ya no está disponible." : "La entrada ya no está disponible.",
+                    HttpStatusCode.Forbidden => recurso switch
+                    {
+                        "veterinarios" => "Tu cuenta no tiene permiso para gestionar veterinarios.",
+                        "auditoria" => "Tu cuenta no tiene permiso para consultar auditorías.",
+                        _ => "Tu cuenta no tiene permiso para gestionar catálogos."
+                    },
+                    HttpStatusCode.NotFound => recurso switch
+                    {
+                        "veterinarios" => "El veterinario ya no está disponible.",
+                        "auditoria" => "El informe ya no está disponible.",
+                        _ => "La entrada ya no está disponible."
+                    },
                     HttpStatusCode.BadRequest => "Revisá los datos ingresados.",
                     HttpStatusCode.Conflict => "La operación entra en conflicto con los datos registrados.",
                     _ => "La API no pudo completar la operación."

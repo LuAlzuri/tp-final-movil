@@ -1,0 +1,236 @@
+@page "/administracion/auditoria/{Tipo}"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using Turnero.App.Auditoria
+@inject AuditoriaApi Api
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo gestion-titulo-listado mb-3">@Titulo</h1>
+
+        @if (informe is null)
+        {
+            <a href="administracion/auditoria" class="btn gestion-neutro rounded-pill">Volver a auditorías</a>
+        }
+        else if (error is not null)
+        {
+            <p class="alert alert-danger" role="alert">@error</p>
+            <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+        }
+        else if (cargando)
+        {
+            <p class="mb-0" role="status">Cargando informe…</p>
+        }
+        else
+        {
+            @if (Cantidad == 0)
+            {
+                <p role="status">@(pagina == 1 ? "No hay registros para mostrar." : "No hay más registros.")</p>
+            }
+            else
+            {
+                <div class="informe-grilla table-responsive" tabindex="0" role="region" aria-label="@Titulo">
+                    @if (informe == "errores")
+                    {
+                        <table class="table table-striped align-middle mb-0">
+                            <thead>
+                                <tr><th scope="col">Fecha (UTC)</th><th scope="col">Nivel</th><th scope="col">Mensaje</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var registro in errores)
+                                {
+                                    <tr>
+                                        <td class="informe-fecha">@registro.FechaUtc.UtcDateTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                        <td>@registro.Nivel</td>
+                                        <td>
+                                            <div>@registro.Mensaje</div>
+                                            @if (registro.Ruta is not null || registro.Origen is not null || registro.IdSolicitud is not null)
+                                            {
+                                                <details class="small mt-1">
+                                                    <summary>Detalles técnicos</summary>
+                                                    @if (registro.Ruta is not null)
+                                                    {
+                                                        <div><strong>Solicitud</strong> @registro.Metodo @registro.Ruta</div>
+                                                    }
+                                                    @if (registro.Origen is not null)
+                                                    {
+                                                        <div><strong>Origen</strong> @registro.Origen</div>
+                                                    }
+                                                    @if (registro.IdSolicitud is not null)
+                                                    {
+                                                        <div><strong>ID de solicitud</strong> @registro.IdSolicitud</div>
+                                                    }
+                                                </details>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <table class="table table-striped align-middle mb-0 informe-movimientos">
+                            <colgroup>
+                                <col class="informe-col-fecha" />
+                                <col class="informe-col-accion" />
+                                <col />
+                            </colgroup>
+                            <thead>
+                                <tr><th scope="col">Fecha (UTC)</th><th scope="col">Acción</th><th scope="col">Datos del movimiento</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var registro in movimientos)
+                                {
+                                    <tr @key="registro.Id">
+                                        <td class="informe-fecha">@registro.FechaUtc.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                        <td>@registro.Accion</td>
+                                        <td>
+                                            <dl class="small mb-0">
+                                                <dt>Registro afectado</dt>
+                                                <dd class="mb-1">@(string.IsNullOrWhiteSpace(registro.EntidadId)
+                                                    ? registro.Entidad : $"{registro.Entidad} #{registro.EntidadId}")</dd>
+                                                @if (!string.IsNullOrWhiteSpace(registro.UsuarioEmail))
+                                                {
+                                                    <dt>Correo de quien realizó la acción</dt>
+                                                    <dd class="mb-0">@registro.UsuarioEmail</dd>
+                                                }
+                                                else
+                                                {
+                                                    <dt>Autor</dt>
+                                                    <dd class="mb-0">@(registro.UsuarioId is int id ? $"Usuario #{id}" : "Sistema")</dd>
+                                                }
+                                            </dl>
+                                            @if (registro.Ip is not null || registro.Observacion is not null)
+                                            {
+                                                <details class="small mt-1">
+                                                    <summary>Más datos</summary>
+                                                    @if (registro.Ip is not null)
+                                                    {
+                                                        <div><strong>IP</strong> @registro.Ip</div>
+                                                    }
+                                                    @if (registro.Observacion is not null)
+                                                    {
+                                                        <div><strong>Observación</strong> @registro.Observacion</div>
+                                                    }
+                                                </details>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            }
+        }
+
+        @if (informe is not null && (pagina > 1 || Cantidad > 0))
+        {
+            <nav class="d-flex flex-wrap gap-2 align-items-center justify-content-between mt-3"
+                 aria-label="Paginación del informe">
+                <button type="button" class="btn gestion-neutro rounded-pill" disabled="@(cargando || pagina == 1)"
+                        @onclick="AnteriorAsync">Anterior</button>
+                <span class="small fw-semibold" aria-live="polite">Página @pagina</span>
+                <button type="button" class="btn gestion-neutro rounded-pill"
+                        disabled="@(!PuedeAvanzar)"
+                        @onclick="SiguienteAsync">Siguiente</button>
+            </nav>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public string? Tipo { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<ErrorAuditoria> errores = [];
+    private List<MovimientoAuditoria> movimientos = [];
+    private string? informe;
+    private string? error;
+    private int pagina = 1;
+    private int versionCarga;
+    private bool cargando;
+
+    private string Titulo => informe switch
+    {
+        "errores" => "Errores",
+        "movimientos" => "Movimientos",
+        _ => "Informe no encontrado"
+    };
+
+    private int Cantidad => informe == "errores" ? errores.Count : movimientos.Count;
+    private bool PuedeAvanzar => !cargando && error is null && Cantidad >= AuditoriaApi.TamanoPagina && pagina < 1_000_000;
+
+    protected override Task OnParametersSetAsync()
+    {
+        var tipo = Tipo?.ToLowerInvariant();
+        var actual = tipo is "errores" or "movimientos" ? tipo : null;
+        if (informe == actual)
+            return Task.CompletedTask;
+
+        informe = actual;
+        pagina = 1;
+        return CargarAsync();
+    }
+
+    private Task AnteriorAsync()
+    {
+        if (cargando || pagina == 1)
+            return Task.CompletedTask;
+
+        pagina--;
+        return CargarAsync();
+    }
+
+    private Task SiguienteAsync()
+    {
+        if (!PuedeAvanzar)
+            return Task.CompletedTask;
+
+        pagina++;
+        return CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        error = null;
+        errores = [];
+        movimientos = [];
+        cargando = informe is not null;
+        try
+        {
+            if (informe == "errores")
+            {
+                var registros = await Api.ListarErroresAsync(pagina, cancelacion.Token);
+                if (version == versionCarga)
+                    errores = registros;
+            }
+            else if (informe == "movimientos")
+            {
+                var registros = await Api.ListarMovimientosAsync(pagina, cancelacion.Token);
+                if (version == versionCarga)
+                    movimientos = registros;
+            }
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            if (version == versionCarga)
+                cargando = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}
