@@ -1,0 +1,69 @@
+@using Turnero.App.Perros
+@inject PerrosApi Api
+@implements IDisposable
+
+<section class="mt-4" aria-labelledby="perros-tutor">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h2 id="perros-tutor" class="gestion-nombre mb-0">Sus perros</h2>
+        <a class="btn gestion-neutro rounded-pill fw-semibold"
+           href="@($"veterinario/tutores/{TutorId}/perros")">Gestionar</a>
+    </div>
+    @if (error is not null)
+    {
+        <p class="alert alert-danger mt-3 mb-0" role="alert">@error</p>
+        <button type="button" class="btn gestion-neutro rounded-pill mt-2" @onclick="CargarAsync">Reintentar</button>
+    }
+    else if (perros is null)
+    {
+        <p class="mt-3 mb-0" role="status">Cargando perros…</p>
+    }
+    else if (perros.Count == 0)
+    {
+        <p class="mt-3 mb-0" role="status">Este tutor no tiene perros registrados.</p>
+    }
+    else
+    {
+        <ul class="gestion-listado list-unstyled d-grid mt-3 mb-0">
+            @foreach (var perro in perros)
+            {
+                <li class="gestion-tarjeta d-flex align-items-center justify-content-between flex-wrap gap-2" @key="perro.Id">
+                    <h3 class="h6 fw-bold text-break mb-0">@perro.Nombre</h3>
+                    <a class="btn gestion-principal rounded-pill fw-semibold"
+                       href="@($"veterinario/perros/{perro.Id}")"
+                       aria-label="@($"Ver detalle de {perro.Nombre}")">Ver detalle</a>
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public int TutorId { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<Perro>? perros;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        perros = null;
+        error = null;
+        try
+        {
+            perros = await Api.ListarAsync(TutorId, cancelacion.Token);
+        }
+        catch (GestionApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

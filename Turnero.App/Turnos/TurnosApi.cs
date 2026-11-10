@@ -19,8 +19,6 @@ internal sealed record Turno(int Id, int PerroId, string PerroNombre, EstadoTurn
 
 internal sealed record ServicioTurno(int ServicioId, string Descripcion, bool Completado);
 internal sealed record TratamientoTurno(string Descripcion, string? Razon);
-internal sealed record PacienteTurno(DateOnly FechaNacimiento, bool Reactivo, bool CalVacCom, List<PatologiaPaciente> Patologias);
-internal sealed record PatologiaPaciente(string Descripcion, bool Controlado, string? Observacion);
 
 internal sealed class TurnosApi(ApiGestion api)
 {
@@ -39,12 +37,6 @@ internal sealed class TurnosApi(ApiGestion api)
     {
         using var respuesta = await api.EnviarAsync(HttpMethod.Get, $"{Ruta}/{id}", ct, recurso: "turnos");
         return await ApiGestion.LeerAsync<Turno>(respuesta, ct);
-    }
-
-    public async Task<PacienteTurno> ObtenerPacienteAsync(int perroId, CancellationToken ct)
-    {
-        using var respuesta = await api.EnviarAsync(HttpMethod.Get, $"api/perros/{perroId}", ct, recurso: "paciente");
-        return await ApiGestion.LeerAsync<PacienteTurno>(respuesta, ct);
     }
 
     public async Task CambiarEstadoAsync(Turno turno, EstadoTurno destino,
