@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @implements IDisposable
+@using System.Security.Claims
 @using Microsoft.JSInterop
 @inject SesionService Sesion
 @inject NavigationManager Navegacion
@@ -7,7 +8,7 @@
 
 <div class="inicio-pantalla d-flex flex-column mx-auto">
     <header class="inicio-cabecera position-relative d-flex align-items-center justify-content-between gap-2">
-        <AuthorizeView Roles="@Roles.Administrador">
+        <AuthorizeView Roles="@SeccionesInicio.RolesConMenu">
             <Authorized>
                 <p class="inicio-saludo fw-bold mb-0">¡Bienvenida, @(context.User.Identity?.Name)!</p>
                 <button type="button" class="btn inicio-menu-boton"
@@ -27,12 +28,13 @@
     </header>
 
     <div class="inicio-cuerpo position-relative d-flex flex-column flex-grow-1">
-        <AuthorizeView Roles="@Roles.Administrador">
-            <nav id="inicio-menu" class="inicio-menu position-absolute" aria-label="Menú de administración"
+        <AuthorizeView Roles="@SeccionesInicio.RolesConMenu">
+            <nav id="inicio-menu" class="inicio-menu position-absolute"
+                 aria-label="@(context.User.IsInRole(Roles.Administrador) ? "Menú de administración" : "Menú del veterinario")"
                  hidden="@(!menuAbierto)">
                 <ul class="list-unstyled mb-0">
                     <li><a href="inicio" @onclick="CerrarMenu">Inicio</a></li>
-                    @foreach (var seccion in SeccionesAdministracion.Todas)
+                    @foreach (var seccion in SeccionesInicio.Para(context.User))
                     {
                         <li><a href="@seccion.Ruta" @onclick="CerrarMenu">@seccion.Titulo</a></li>
                     }
@@ -48,8 +50,9 @@
         </main>
 
         <AuthorizeView>
+            @{ var mostrarAtajos = MostrarAtajos(context.User); }
             <footer class="inicio-pie d-flex justify-content-center align-items-center">
-                @if (context.User.IsInRole(Roles.Administrador) && MostrarAtajos)
+                @if (mostrarAtajos)
                 {
                     <button type="button" class="btn inicio-atajo flex-fill" aria-label="Volver a la pantalla anterior"
                             @onclick="VolverAsync">
@@ -59,7 +62,7 @@
                         <img src="images/inicio.svg" width="32" height="32" alt="" />
                     </a>
                 }
-                <button type="button" class="btn inicio-atajo @(context.User.IsInRole(Roles.Administrador) && MostrarAtajos ? "flex-fill" : "")"
+                <button type="button" class="btn inicio-atajo @(mostrarAtajos ? "flex-fill" : "")"
                         aria-label="Cerrar sesión" disabled="@cerrandoSesion" @onclick="CerrarSesionAsync">
                     <img src="images/salir.svg" width="32" height="32" alt="" />
                 </button>
@@ -71,8 +74,9 @@
 @code {
     private bool menuAbierto;
     private bool cerrandoSesion;
-    private bool MostrarAtajos => Navegacion.ToBaseRelativePath(Navegacion.Uri)
-        .StartsWith("administracion/", StringComparison.OrdinalIgnoreCase);
+    private bool MostrarAtajos(ClaimsPrincipal usuario) =>
+        SeccionesInicio.AreaPara(usuario) is { } area && Navegacion.ToBaseRelativePath(Navegacion.Uri)
+            .StartsWith($"{area}/", StringComparison.OrdinalIgnoreCase);
 
     protected override void OnInitialized() => Navegacion.LocationChanged += AlCambiarUbicacion;
 
