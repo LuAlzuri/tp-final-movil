@@ -30,7 +30,7 @@
                 <li class="gestion-tarjeta turnos-tarjeta d-grid" @key="turno.Id">
                     <div class="turnos-encabezado d-flex flex-wrap align-items-start justify-content-between gap-2">
                         <h2 class="turnos-titulo gestion-nombre mb-0">Turno #@turno.Id</h2>
-                        <span class="turnos-estado @ClaseEstado(turno.EstadoId) rounded-pill fw-semibold">@turno.EstadoDescripcion</span>
+                        <EtiquetaEstadoTurno Estado="@turno.EstadoId" Descripcion="@turno.EstadoDescripcion" />
                     </div>
                     <p class="turnos-perro mb-0"><strong>Paciente:</strong> <span>@turno.PerroNombre</span></p>
                     <div class="d-flex justify-content-end">
@@ -67,14 +67,6 @@
 
     private bool PuedeAvanzar => !cargando && error is null &&
         turnos.Count == TurnosApi.TamanoPagina && paginaActual < TurnosApi.MaximaPagina;
-
-    private static string ClaseEstado(int id) => id switch
-    {
-        1 => "turnos-estado-pendiente",
-        2 => "turnos-estado-aprobado",
-        3 or 4 or 5 => "turnos-estado-baja",
-        _ => string.Empty
-    };
 
     protected override Task OnParametersSetAsync()
     {

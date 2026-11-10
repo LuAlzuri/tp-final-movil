@@ -17,34 +17,6 @@
     font-size: clamp(1.05rem, 5vw, 1.3rem);
 }
 
-.turnos-estado {
-    max-width: 100%;
-    padding: .3rem .75rem;
-    border: 1px solid #d4e5e3;
-    background: #fff;
-    font-size: .875rem;
-    line-height: 1.2;
-    overflow-wrap: anywhere;
-}
-
-.turnos-estado-pendiente {
-    border-color: #e2c36a;
-    background: #fff3cc;
-    color: #624700;
-}
-
-.turnos-estado-aprobado {
-    border-color: #8dc7a0;
-    background: #dff3e5;
-    color: #195b34;
-}
-
-.turnos-estado-baja {
-    border-color: #e3a0a6;
-    background: #fbe5e7;
-    color: #842029;
-}
-
 .turnos-perro {
     color: #153e42;
     overflow-wrap: anywhere;

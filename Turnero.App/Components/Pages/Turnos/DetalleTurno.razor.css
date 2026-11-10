@@ -1,0 +1,46 @@
+.detalle-turno-encabezado {
+    padding-bottom: .75rem;
+    border-bottom: 1px solid #bfd6d4;
+}
+
+.detalle-turno-subtitulo {
+    margin-bottom: .45rem;
+    color: #153e42;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.detalle-turno-recuadro {
+    padding: .75rem;
+    border: 1px solid #dce8e7;
+    border-radius: .85rem;
+    background: #fff;
+    box-shadow: 0 2px 7px rgb(21 62 66 / 7%);
+    overflow-wrap: anywhere;
+}
+
+.detalle-turno-reactivo {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.detalle-turno-servicios li + li {
+    margin-top: .5rem;
+    padding-top: .5rem;
+    border-top: 1px solid #dce8e7;
+}
+
+.detalle-turno-datos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
+    gap: .55rem .8rem;
+}
+
+.detalle-turno-datos dd {
+    margin-bottom: 0;
+}
+
+.detalle-turno-nota {
+    grid-column: 1 / -1;
+}
