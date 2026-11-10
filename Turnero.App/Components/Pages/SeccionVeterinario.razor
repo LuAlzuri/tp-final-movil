@@ -1,0 +1,26 @@
+@page "/veterinario/{Seccion}"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+
+@{
+    var operacion = SeccionesInicio.Veterinario.FirstOrDefault(item =>
+        string.Equals(item.Id, Seccion, StringComparison.OrdinalIgnoreCase));
+}
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo">@(operacion?.Titulo ?? "Sección no encontrada")</h1>
+        @if (operacion is not null)
+        {
+            <p class="mb-0">En construcción.</p>
+        }
+        else
+        {
+            <a href="inicio" class="btn gestion-neutro rounded-pill">Volver a Inicio</a>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public string? Seccion { get; set; }
+}
