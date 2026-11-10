@@ -1,0 +1,98 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject SesionService Sesion
+@inject NavigationManager Navegacion
+
+<div class="inicio-pantalla d-flex flex-column mx-auto">
+    <header class="inicio-cabecera position-relative d-flex align-items-center justify-content-between gap-2">
+        <AuthorizeView Roles="@Roles.Administrador">
+            <Authorized>
+                <p class="inicio-saludo fw-bold mb-0">¡Bienvenida, @(context.User.Identity?.Name)!</p>
+                <button type="button" class="btn inicio-menu-boton"
+                        aria-label="@(menuAbierto ? "Cerrar menú" : "Abrir menú")"
+                        aria-controls="inicio-menu" aria-expanded="@(menuAbierto ? "true" : "false")"
+                        @onclick="AlternarMenu">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">
+                        <path d="@(menuAbierto ? "M6 6l12 12M18 6 6 18" : "M4 6h16M4 12h16M4 18h16")" />
+                    </svg>
+                </button>
+            </Authorized>
+            <NotAuthorized>
+                <p class="inicio-saludo fw-bold mb-0">VeteApp</p>
+            </NotAuthorized>
+        </AuthorizeView>
+    </header>
+
+    <div class="inicio-cuerpo position-relative d-flex flex-column flex-grow-1">
+        <AuthorizeView Roles="@Roles.Administrador">
+            <nav id="inicio-menu" class="inicio-menu position-absolute" aria-label="Menú de administración"
+                 hidden="@(!menuAbierto)">
+                <ul class="list-unstyled mb-0">
+                    <li><a href="inicio" @onclick="CerrarMenu">Inicio</a></li>
+                    @foreach (var seccion in SeccionesAdministracion.Todas)
+                    {
+                        <li><a href="@seccion.Ruta" @onclick="CerrarMenu">@seccion.Titulo</a></li>
+                    }
+                    <li>
+                        <button type="button" disabled="@cerrandoSesion" @onclick="CerrarSesionAsync">Cerrar sesión</button>
+                    </li>
+                </ul>
+            </nav>
+        </AuthorizeView>
+
+        <main class="inicio-contenido flex-grow-1">
+            @Body
+        </main>
+
+        <AuthorizeView>
+            <footer class="inicio-pie d-flex justify-content-center align-items-center">
+                <button type="button" class="btn inicio-salida" aria-label="Cerrar sesión"
+                        disabled="@cerrandoSesion" @onclick="CerrarSesionAsync">
+                    <img src="images/salir.svg" width="32" height="32" alt="" />
+                </button>
+            </footer>
+        </AuthorizeView>
+    </div>
+</div>
+
+@code {
+    private bool menuAbierto;
+    private bool cerrandoSesion;
+
+    protected override void OnInitialized() => Navegacion.LocationChanged += AlCambiarUbicacion;
+
+    private void AlternarMenu() => menuAbierto = !menuAbierto;
+
+    private void CerrarMenu() => menuAbierto = false;
+
+    private void AlCambiarUbicacion(object? sender, LocationChangedEventArgs args)
+    {
+        if (menuAbierto)
+            _ = InvokeAsync(() =>
+            {
+                CerrarMenu();
+                StateHasChanged();
+            });
+    }
+
+    private async Task CerrarSesionAsync()
+    {
+        if (cerrandoSesion)
+            return;
+
+        cerrandoSesion = true;
+        try
+        {
+            await Sesion.CerrarSesionAsync();
+            CerrarMenu();
+            Navegacion.NavigateTo("/", replace: true);
+        }
+        finally
+        {
+            cerrandoSesion = false;
+        }
+    }
+
+    public void Dispose() => Navegacion.LocationChanged -= AlCambiarUbicacion;
+}

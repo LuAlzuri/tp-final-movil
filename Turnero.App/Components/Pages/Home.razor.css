@@ -1,0 +1,42 @@
+.inicio-opciones {
+    gap: clamp(.65rem, 3.6vw, 1.1rem);
+    padding: clamp(.75rem, 5vw, 1.4rem);
+    padding-block-start: clamp(1.25rem, 7vw, 1.9rem);
+}
+
+.inicio-tarjeta {
+    gap: .85rem;
+    padding: clamp(.65rem, 3.6vw, 1rem);
+    border: 1px solid #dce8e7;
+    border-radius: 1.15rem;
+    background: #eef3f2;
+    box-shadow: 0 3px 6px rgb(21 62 66 / 9%), 0 6px 14px rgb(21 62 66 / 12%);
+}
+
+.inicio-titulo {
+    color: #000;
+    font-size: clamp(1.05rem, 5.5vw, 1.4rem);
+    line-height: 1.2;
+}
+
+.inicio-ver {
+    --bs-btn-color: #153e42;
+    --bs-btn-bg: #fff;
+    --bs-btn-border-color: #d4e5e3;
+    --bs-btn-hover-color: #153e42;
+    --bs-btn-hover-bg: #d9f2ef;
+    --bs-btn-hover-border-color: #92c9c6;
+    --bs-btn-active-color: #153e42;
+    --bs-btn-active-bg: #c7e9e6;
+    --bs-btn-active-border-color: #92c9c6;
+    --bs-btn-focus-shadow-rgb: 33, 86, 90;
+    display: inline-grid;
+    min-width: min(45%, 7.5rem);
+    min-height: 2.75rem;
+    place-items: center;
+    font-size: .95rem;
+}
+
+.inicio-ver:not(:focus-visible) {
+    box-shadow: 0 2px 6px rgb(21 62 66 / 15%);
+}

@@ -1,20 +1,26 @@
 @page "/inicio"
 @attribute [Authorize]
-@inject SesionService Sesion
-@inject NavigationManager Navegacion
-
-<h1 class="h3">Turnero de peluquería canina</h1>
+@layout InicioLayout
 
 <AuthorizeView>
-    <p class="mb-3">Sesión iniciada como @(context.User.Identity?.Name).</p>
-</AuthorizeView>
-
-<button type="button" class="btn btn-outline-dark" @onclick="CerrarSesionAsync">Cerrar sesión</button>
-
-@code {
-    private async Task CerrarSesionAsync()
+    @if (context.User.IsInRole(Roles.Administrador))
     {
-        await Sesion.CerrarSesionAsync();
-        Navegacion.NavigateTo("/", replace: true);
+        <section class="inicio-opciones d-grid">
+            <h1 class="visually-hidden">Inicio de administración</h1>
+            @foreach (var seccion in SeccionesAdministracion.Todas)
+            {
+                <article class="inicio-tarjeta d-flex flex-column">
+                    <h2 class="inicio-titulo fw-bold mb-0">@seccion.Titulo</h2>
+                    <a href="@seccion.Ruta" class="btn inicio-ver rounded-pill fw-semibold align-self-end"
+                       aria-label="@($"Ver {seccion.Titulo.ToLowerInvariant()}")">Ver</a>
+                </article>
+            }
+        </section>
     }
-}
+    else
+    {
+        <section class="h-100 d-grid align-content-center text-center p-3">
+            <h1 class="h4 mb-0">En construcción · @(context.User.IsInRole(Roles.Tutor) ? Roles.Tutor : Roles.Veterinario)</h1>
+        </section>
+    }
+</AuthorizeView>

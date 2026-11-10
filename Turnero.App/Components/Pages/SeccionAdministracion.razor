@@ -1,0 +1,26 @@
+@page "/administracion/{Seccion}"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+
+@{
+    var operacion = SeccionesAdministracion.Todas.FirstOrDefault(item => item.Id == Seccion);
+}
+
+<section class="p-4">
+    @if (operacion is not null)
+    {
+        <h1 class="h4">@operacion.Titulo</h1>
+        <p>En construcción.</p>
+    }
+    else
+    {
+        <h1 class="h4">Sección no encontrada</h1>
+    }
+
+    <a class="btn btn-outline-dark" href="inicio">Volver a Inicio</a>
+</section>
+
+@code {
+    [Parameter]
+    public string? Seccion { get; set; }
+}
