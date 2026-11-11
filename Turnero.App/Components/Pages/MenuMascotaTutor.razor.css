@@ -1,0 +1,64 @@
+.mascota-cabecera {
+    --tamano-avatar: 3rem;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    min-width: 0;
+}
+
+.mascota-nombre {
+    min-width: 0;
+    color: #153e42;
+    font-size: clamp(1.45rem, 6.8vw, 1.85rem);
+    line-height: 1.15;
+    text-align: center;
+}
+
+.mascota-opciones {
+    gap: clamp(1rem, 7vw, 1.8rem);
+}
+
+.mascota-opcion {
+    justify-content: space-between;
+    gap: .85rem;
+    min-height: clamp(6.5rem, 31vw, 8rem);
+    border-color: rgb(117 39 43 / 13%);
+    border-radius: 1.2rem;
+    background: #cc6268;
+    color: #241416;
+    box-shadow: 0 4px 10px rgb(101 39 45 / 16%);
+}
+
+.mascota-opcion:nth-child(2) {
+    background: #df8185;
+}
+
+.mascota-opcion:nth-child(3) {
+    background: #e59498;
+}
+
+.mascota-opcion-titulo {
+    font-size: clamp(1rem, 5vw, 1.28rem);
+    line-height: 1.2;
+}
+
+.mascota-ir {
+    --bs-btn-color: #371b1e;
+    --bs-btn-bg: #fff;
+    --bs-btn-hover-bg: #fff3f3;
+    --bs-btn-hover-color: #371b1e;
+    display: inline-grid;
+    min-width: min(50%, 7.5rem);
+    min-height: 2.75rem;
+    place-items: center;
+    box-shadow: 0 2px 7px rgb(80 26 30 / 20%);
+}
+
+@media (orientation: landscape) and (min-width: 32rem) and (max-height: 37.5rem) {
+    .mascota-opciones {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .85rem;
+    }
+}

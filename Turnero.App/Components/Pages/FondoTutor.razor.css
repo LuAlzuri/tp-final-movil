@@ -1,0 +1,17 @@
+.tutor-fondo {
+    --huella: url("images/patita.svg");
+    min-height: 100%;
+    padding: clamp(1.4rem, 9vw, 3rem) clamp(1rem, 9vw, 2.5rem);
+    background-image: var(--huella), var(--huella), var(--huella), var(--huella),
+        var(--huella), var(--huella), var(--huella), var(--huella), var(--huella), var(--huella), var(--huella),
+        var(--huella);
+    background-repeat: no-repeat;
+    background-size: clamp(3.5rem, 27%, 7rem) auto;
+    background-position: 16% -7%, -8% 25%, 89% 28%, 46% 52%, 107% 64%, -12% 84%, 72% 108%,
+        87% 86%, 25% 98%, 78% -6%, 107% 17%, 49% 41%;
+}
+@media (orientation: landscape) and (min-width: 32rem) and (max-height: 37.5rem) {
+    .tutor-fondo {
+        padding: 1rem 1.4rem;
+    }
+}
