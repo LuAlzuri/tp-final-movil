@@ -5,14 +5,7 @@
 
 @if (CupoId is int elegido)
 {
-    <section class="gestion-tarjeta">
-        <h2 class="gestion-nombre">Servicios del turno</h2>
-        @if (cupos?.Find(cupo => cupo.Id == elegido) is { } seleccionado)
-        {
-            <p>@seleccionado.FechaCupo.ToString("dd/MM/yyyy")</p>
-        }
-        <p class="mb-0">En construcción.</p>
-    </section>
+    <FormularioSolicitudTurno @key="(PerroId, elegido)" PerroId="@PerroId" CupoId="@elegido" />
 }
 else if (error is not null)
 {
@@ -54,13 +47,15 @@ else
 }
 
 @code {
+    [Parameter] public int PerroId { get; set; }
     [Parameter] public int? CupoId { get; set; }
 
     private readonly CancellationTokenSource cancelacion = new();
     private List<CupoDiario>? cupos;
     private string? error;
 
-    protected override Task OnInitializedAsync() => CargarAsync();
+    protected override Task OnParametersSetAsync() =>
+        CupoId is null && cupos is null ? CargarAsync() : Task.CompletedTask;
 
     private async Task CargarAsync()
     {
