@@ -1,0 +1,134 @@
+@using Turnero.App.Turnos
+@using Turnero.App.Components.Pages.Turnos
+@inject TurnosApi Api
+@implements IDisposable
+
+<section aria-labelledby="estados-turnos-tutor">
+    <h2 id="estados-turnos-tutor" class="visually-hidden">Turnos de la mascota</h2>
+    @if (aviso is not null)
+    {
+        <p class="alert alert-success" role="status">@aviso</p>
+    }
+    @if (error is not null)
+    {
+        <p class="alert alert-danger" role="alert">@error</p>
+    }
+
+    @if (cargando)
+    {
+        <p class="gestion-tarjeta mb-0" role="status">Cargando turnos…</p>
+    }
+    else if (turnos is null)
+    {
+        <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+    }
+    else if (turnos.Count == 0)
+    {
+        <p class="gestion-tarjeta mb-0" role="status">Esta mascota todavía no tiene turnos.</p>
+    }
+    else
+    {
+        <ul class="estados-tutor-lista list-unstyled d-grid mb-0">
+            @foreach (var turno in turnos)
+            {
+                <li class="estados-tutor-turno gestion-tarjeta" @key="turno.Id">
+                    <div class="estados-tutor-encabezado d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h3 class="estados-tutor-titulo fw-bold mb-0">Turno #@turno.Id</h3>
+                        <EtiquetaEstadoTurno Estado="@turno.EstadoId" Descripcion="@turno.EstadoDescripcion" />
+                    </div>
+                    <time class="small d-block mt-2" datetime="@turno.FechaCupo.ToString("yyyy-MM-dd")">@turno.FechaCupo.ToString("dd/MM/yyyy")</time>
+                    @if (turno.EstadoId is EstadoTurno.Pendiente or EstadoTurno.Aprobado)
+                    {
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="button" class="btn gestion-neutro estados-tutor-cancelar rounded-pill fw-semibold"
+                                    disabled="@cancelando" aria-label="@($"Cancelar turno {turno.Id}")"
+                                    @onclick="() => PedirConfirmacionAsync(turno)">Cancelar</button>
+                        </div>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+<DialogoBaja @ref="dialogo" Titulo="¿Cancelar turno?" Introduccion="Se cancelará el"
+             TextoConfirmar="Sí, cancelar" TextoOcupado="Cancelando…"
+             Ocupado="@cancelando" Confirmar="CancelarTurnoAsync" />
+
+@code {
+    [Parameter] public int PerroId { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private DialogoBaja dialogo = default!;
+    private List<Turno>? turnos;
+    private Turno? seleccionado;
+    private string? error;
+    private string? aviso;
+    private bool cargando = true;
+    private bool cancelando;
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        cargando = true;
+        error = null;
+        try
+        {
+            turnos = await Api.ListarPorMascotaAsync(PerroId, cancelacion.Token);
+        }
+        catch (GestionApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task PedirConfirmacionAsync(Turno turno)
+    {
+        seleccionado = turno;
+        await dialogo.AbrirAsync($"turno #{turno.Id}");
+    }
+
+    private async Task CancelarTurnoAsync()
+    {
+        if (cancelando || seleccionado is not { } turno || turnos is not { } listado)
+            return;
+
+        cancelando = true;
+        error = aviso = null;
+        try
+        {
+            await Api.CancelarAsync(turno.Id, cancelacion.Token);
+            listado[listado.IndexOf(turno)] = turno with
+            {
+                EstadoId = EstadoTurno.CanceladoPorTutor,
+                EstadoDescripcion = "Cancelado por tutor"
+            };
+            aviso = $"El turno #{turno.Id} se canceló.";
+        }
+        catch (GestionApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            cancelando = false;
+        }
+
+        seleccionado = null;
+        if (!cancelacion.IsCancellationRequested)
+            await dialogo.CerrarAsync();
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

@@ -1,0 +1,68 @@
+.historial-panel {
+    padding: clamp(.8rem, 5vw, 1.35rem);
+    border-color: #da848a;
+    border-radius: 1.25rem;
+    background: #e59498;
+    color: #241416;
+    box-shadow: 0 4px 12px rgb(101 39 45 / 16%);
+}
+
+.historial-titulo {
+    margin-bottom: 1rem;
+    font-size: clamp(1.1rem, 5vw, 1.4rem);
+}
+
+.historial-lista {
+    gap: 1rem;
+}
+
+.historial-turno {
+    background: #fffaf9;
+    border-color: #efdcda;
+}
+
+.historial-fecha {
+    padding-bottom: .65rem;
+    border-bottom: 1px solid #ead6d5;
+    font-size: 1.05rem;
+}
+
+.historial-etiqueta {
+    font-size: .95rem;
+}
+
+.historial-servicios {
+    gap: .4rem;
+}
+
+.historial-servicio {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .25rem .65rem;
+    padding: .55rem .75rem;
+    border: 1px solid #a7d5cf;
+    border-radius: .75rem;
+    background: #e3f3f0;
+    color: #153e42;
+    font-size: .9rem;
+}
+
+.historial-servicio-pendiente {
+    border-color: #e5d3d2;
+    background: #f7eeee;
+    color: #574445;
+}
+
+.historial-observaciones {
+    font-size: .9rem;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.historial-detalle {
+    min-height: 2.75rem;
+    padding-inline: .85rem;
+    font-size: .85rem;
+}

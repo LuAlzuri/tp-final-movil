@@ -9,13 +9,15 @@
         <button type="button" class="btn gestion-neutro rounded-pill" autofocus
                 disabled="@Ocupado" @onclick="CerrarAsync">Cancelar</button>
         <button type="button" class="btn btn-danger gestion-eliminar rounded-pill"
-                disabled="@Ocupado" @onclick="Confirmar">@(Ocupado ? "Eliminando…" : "Sí, eliminar")</button>
+                disabled="@Ocupado" @onclick="Confirmar">@(Ocupado ? TextoOcupado : TextoConfirmar)</button>
     </div>
 </dialog>
 
 @code {
     [Parameter, EditorRequired] public string Titulo { get; set; } = string.Empty;
     [Parameter] public string Introduccion { get; set; } = "Se eliminará";
+    [Parameter] public string TextoConfirmar { get; set; } = "Sí, eliminar";
+    [Parameter] public string TextoOcupado { get; set; } = "Eliminando…";
     [Parameter] public bool Ocupado { get; set; }
     [Parameter] public EventCallback Confirmar { get; set; }
 

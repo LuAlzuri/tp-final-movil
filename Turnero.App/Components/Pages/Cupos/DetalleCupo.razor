@@ -1,0 +1,176 @@
+@page "/veterinario/cupos/{Id:int}"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Microsoft.JSInterop
+@using Turnero.App.Cupos
+@using Turnero.App.Turnos
+@using Turnero.App.Components.Pages.Turnos
+@inject CuposApi Api
+@inject TurnosApi Turnos
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo">Detalle del cupo</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger" role="alert">@error</p>
+            @if (cupo is null)
+            {
+                <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+            }
+        }
+        @if (cupo is { } registro)
+        {
+            <article class="gestion-tarjeta mt-3">
+                <h2 class="gestion-nombre text-capitalize">@registro.Dia @registro.FechaCupo.ToString("dd/MM/yyyy")</h2>
+                <p>@registro.CuposDisponibles de @registro.CuposPublicados cupos disponibles</p>
+                <div class="d-flex justify-content-between flex-wrap gap-2">
+                    <button type="button" class="btn btn-danger gestion-eliminar gestion-accion rounded-pill fw-semibold"
+                            disabled="@eliminando" @onclick="PedirConfirmacionAsync">Eliminar</button>
+                    <a class="btn gestion-principal gestion-accion rounded-pill fw-semibold"
+                       href="@($"veterinario/cupos/{registro.Id}/editar")">Editar</a>
+                </div>
+            </article>
+
+            <section class="mt-4" aria-labelledby="turnos-cupo">
+                <h2 id="turnos-cupo" class="gestion-nombre">Turnos aprobados</h2>
+                @if (errorTurnos is not null)
+                {
+                    <p class="alert alert-danger" role="alert">@errorTurnos</p>
+                    <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+                }
+                else if (turnos is null)
+                {
+                    <p class="mb-0" role="status">Cargando turnos…</p>
+                }
+                else if (turnos.Count == 0)
+                {
+                    <p class="mb-0" role="status">No hay turnos aprobados para este día.</p>
+                }
+                else
+                {
+                    <div class="table-responsive gestion-tarjeta p-0" tabindex="0" role="region" aria-labelledby="turnos-cupo">
+                        <table class="table table-bordered align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Turno</th>
+                                    <th scope="col">Paciente</th>
+                                    <th scope="col">Estado</th>
+                                    <th scope="col">Cupos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var turno in turnos)
+                                {
+                                    <tr @key="turno.Id">
+                                        <th scope="row">
+                                            <a href="@($"veterinario/turnos/{turno.Id}")" aria-label="@($"Ver turno {turno.Id}")">#@turno.Id</a>
+                                        </th>
+                                        <td class="text-break">@turno.PerroNombre</td>
+                                        <td><EtiquetaEstadoTurno Estado="@turno.EstadoId" Descripcion="@turno.EstadoDescripcion" /></td>
+                                        <td>@turno.CuposReservados</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        }
+        else if (error is null)
+        {
+            <p class="mb-0" role="status">Cargando cupo…</p>
+        }
+    </div>
+</section>
+
+<DialogoBaja @ref="dialogo" Titulo="¿Eliminar cupo?" Ocupado="@eliminando" Confirmar="EliminarAsync" />
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private CupoDiario? cupo;
+    private List<Turno>? turnos;
+    private string? error;
+    private string? errorTurnos;
+    private bool eliminando;
+    private int versionCarga;
+    private DialogoBaja dialogo = default!;
+
+    protected override Task OnParametersSetAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        cupo = null;
+        turnos = null;
+        error = errorTurnos = null;
+        try
+        {
+            var registro = await Api.ObtenerAsync(Id, cancelacion.Token);
+            if (version != versionCarga || cancelacion.IsCancellationRequested)
+                return;
+
+            cupo = registro;
+            StateHasChanged();
+            var reservas = await Turnos.ListarAprobadosPorFechaAsync(registro.FechaCupo, cancelacion.Token);
+            if (version == versionCarga)
+                turnos = reservas;
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+            {
+                if (cupo is null)
+                    error = ex.Message;
+                else
+                    errorTurnos = ex.Message;
+            }
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    private Task PedirConfirmacionAsync() =>
+        dialogo.AbrirAsync($"el cupo del {cupo!.FechaCupo:dd/MM/yyyy}");
+
+    private async Task EliminarAsync()
+    {
+        if (eliminando || cupo is not { } registro)
+            return;
+
+        var version = versionCarga;
+        eliminando = true;
+        error = null;
+        try
+        {
+            await Api.EliminarAsync(registro.Id, cancelacion.Token);
+            if (version == versionCarga && !cancelacion.IsCancellationRequested)
+            {
+                if (!await Js.InvokeAsync<bool>("veteApp.volver"))
+                    Navegacion.NavigateTo("veterinario/cupos", replace: true);
+            }
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            eliminando = false;
+            if (!cancelacion.IsCancellationRequested)
+                await dialogo.CerrarAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

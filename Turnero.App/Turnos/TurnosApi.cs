@@ -45,8 +45,27 @@ internal sealed class TurnosApi(ApiGestion api)
         using var respuesta = await api.EnviarAsync(HttpMethod.Post, Ruta, ct, contenido, recurso: "turnos");
     }
 
+    public Task<List<Turno>> ListarPorMascotaAsync(int perroId, CancellationToken ct, EstadoTurno? estado = null)
+    {
+        var ruta = $"{Ruta}?perroId={perroId}";
+        if (estado is { } filtro)
+            ruta += $"&estadoId={(int)filtro}";
+
+        return api.ListarPaginadoAsync<Turno>(ruta, ct, recurso: "turnos");
+    }
+
+    public async Task CancelarAsync(int turnoId, CancellationToken ct)
+    {
+        using var respuesta = await api.EnviarAsync(HttpMethod.Post, $"{Ruta}/{turnoId}/cancelar", ct, recurso: "turnos");
+    }
+
+    public Task<List<Turno>> ListarAprobadosPorFechaAsync(DateOnly fecha, CancellationToken ct) =>
+        api.ListarPaginadoAsync<Turno>(
+            $"{Ruta}?fechaCupo={fecha.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)}&estadoId={(int)EstadoTurno.Aprobado}",
+            ct, recurso: "turnos");
+
     public async Task CambiarEstadoAsync(Turno turno, EstadoTurno destino,
-        IReadOnlyCollection<int> serviciosCompletados, string? observaciones, CancellationToken ct)
+        IReadOnlyCollection<int> serviciosCompletados, string? observaciones, int? cantidad, CancellationToken ct)
     {
         var accion = destino switch
         {
@@ -58,7 +77,7 @@ internal sealed class TurnosApi(ApiGestion api)
         };
         object? datos = destino switch
         {
-            EstadoTurno.Aprobado => new { turno.ObservacionCupo },
+            EstadoTurno.Aprobado => new { Cantidad = cantidad, turno.ObservacionCupo },
             EstadoTurno.Completado => new { ServicioIdsCompletados = serviciosCompletados, Observaciones = observaciones },
             _ => null
         };
