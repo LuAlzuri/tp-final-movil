@@ -1,0 +1,51 @@
+@page "/administracion/informes"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using System.Globalization
+@using Turnero.App.Reportes
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo gestion-titulo-listado mb-0">Informes</h1>
+        <form class="gestion-busqueda d-flex gap-2 mt-3" role="search" @onsubmit="Buscar" @onsubmit:preventDefault>
+            <label for="buscar-informe" class="visually-hidden">Buscar informe</label>
+            <input id="buscar-informe" class="form-control rounded-pill" type="search"
+                   placeholder="Buscar informe…" maxlength="100" @bind="texto" @bind:event="oninput" />
+            <button type="submit" class="btn gestion-principal gestion-buscar rounded-pill fw-semibold">Buscar</button>
+        </form>
+        @if (resultados.Count == 0)
+        {
+            <p class="mt-4 mb-0" role="status">No encontramos informes con ese nombre.</p>
+        }
+        else
+        {
+            <ul class="gestion-listado list-unstyled d-grid mt-4 mb-0">
+                @foreach (var informe in resultados)
+                {
+                    var ruta = $"administracion/informes/{informe.Tipo}";
+                    <li class="gestion-tarjeta" @key="informe.Tipo">
+                        <h2 class="gestion-nombre">@informe.Titulo</h2>
+                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                            <a href="@(ruta + "?pdf=true")" class="btn btn-danger gestion-eliminar rounded-pill fw-semibold"
+                               aria-label="@($"Generar PDF de {informe.Titulo.ToLowerInvariant()}")">Generar PDF</a>
+                            <a href="@ruta" class="btn gestion-principal rounded-pill fw-semibold"
+                               aria-label="@($"Ver informe de {informe.Titulo.ToLowerInvariant()}")">Ver informe</a>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</section>
+
+@code {
+    private IReadOnlyList<DefinicionInforme> resultados = DefinicionInforme.Todas;
+    private string texto = string.Empty;
+
+    private void Buscar()
+    {
+        var comparacion = CultureInfo.GetCultureInfo("es-AR").CompareInfo;
+        resultados = DefinicionInforme.Todas.Where(informe => comparacion.IndexOf(informe.Titulo, texto.Trim(),
+            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0).ToArray();
+    }
+}

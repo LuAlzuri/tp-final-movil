@@ -1,0 +1,34 @@
+@if (Filas.Any())
+{
+    <div class="table-responsive" tabindex="0" role="region" aria-label="@Titulo">
+        <table class="table table-bordered align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">@Primera</th>
+                    <th scope="col">@Segunda</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (etiqueta, valor) in Filas)
+                {
+                    <tr>
+                        <th scope="row" class="text-break">@etiqueta</th>
+                        <td class="text-break">@valor</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p class="small mb-0">@SinDatos</p>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Titulo { get; set; } = "";
+    [Parameter, EditorRequired] public string Primera { get; set; } = "";
+    [Parameter, EditorRequired] public string Segunda { get; set; } = "";
+    [Parameter, EditorRequired] public IEnumerable<(string Etiqueta, string Valor)> Filas { get; set; } = [];
+    [Parameter] public string SinDatos { get; set; } = "";
+}

@@ -4,6 +4,7 @@ using Turnero.App.Auditoria;
 using Turnero.App.Catalogos;
 using Turnero.App.Cupos;
 using Turnero.App.Perros;
+using Turnero.App.Reportes;
 using Turnero.App.Seguridad;
 using Turnero.App.Turnos;
 using Turnero.App.Tutores;
@@ -38,6 +39,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<TutoresApi>();
         builder.Services.AddSingleton<PerrosApi>();
         builder.Services.AddSingleton<CuposApi>();
+        builder.Services.AddSingleton<ReportesApi>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
