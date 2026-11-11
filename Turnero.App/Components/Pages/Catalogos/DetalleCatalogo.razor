@@ -1,5 +1,7 @@
 @page "/administracion/catalogos/{Tipo}/{Id:int}"
-@attribute [Authorize(Roles = Roles.Administrador)]
+@page "/veterinario/catalogos/{Tipo}/{Id:int}"
+@attribute [Authorize(Roles = SeccionesInicio.RolesConMenu)]
+@inherits PaginaCatalogos
 @layout InicioLayout
 @using Turnero.App.Catalogos
 @inject CatalogosApi Api
@@ -18,7 +20,7 @@
             {
                 <article class="gestion-tarjeta mt-3">
                     <h2 class="gestion-nombre">@registro.Descripcion</h2>
-                    <a href="@($"{actual.Ruta}/{registro.Id}/editar")"
+                    <a href="@($"{RutaCatalogos}/{actual.Tipo}/{registro.Id}/editar")"
                        class="btn gestion-principal gestion-accion rounded-pill fw-semibold">Editar</a>
                 </article>
             }
@@ -29,7 +31,7 @@
         }
         else
         {
-            <a href="administracion/catalogos" class="btn gestion-neutro rounded-pill">Volver a catálogos</a>
+            <a href="@RutaCatalogos" class="btn gestion-neutro rounded-pill">Volver a catálogos</a>
         }
     </div>
 </section>
@@ -47,7 +49,11 @@
     protected override async Task OnParametersSetAsync()
     {
         var version = ++versionCarga;
-        catalogo = DefinicionesCatalogo.Buscar(Tipo);
+        await CargarAccesoAsync();
+        if (version != versionCarga)
+            return;
+
+        catalogo = BuscarCatalogo(Tipo);
         entrada = null;
         error = null;
         if (catalogo is not { } actual)

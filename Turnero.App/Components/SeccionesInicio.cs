@@ -26,7 +26,8 @@ internal static class SeccionesInicio
     [
         new(AreaVeterinario, "turnos", "Turnos"),
         new(AreaVeterinario, "tutores", "Listado de tutores"),
-        new(AreaVeterinario, "cupos", "Cupos")
+        new(AreaVeterinario, "cupos", "Cupos"),
+        new(AreaVeterinario, "catalogos", "Gestionar catálogos")
     ];
 
     public static string? AreaPara(ClaimsPrincipal usuario)

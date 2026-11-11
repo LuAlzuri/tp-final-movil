@@ -1,10 +1,11 @@
 @page "/administracion/catalogos/{Tipo}"
-@attribute [Authorize(Roles = Roles.Administrador)]
+@page "/veterinario/catalogos/{Tipo}"
+@attribute [Authorize(Roles = SeccionesInicio.RolesConMenu)]
+@inherits PaginaCatalogos
 @layout InicioLayout
 @using System.Globalization
 @using Turnero.App.Catalogos
 @inject CatalogosApi Api
-@inject NavigationManager Navegacion
 @implements IDisposable
 
 <section class="gestion-pantalla">
@@ -12,7 +13,7 @@
         @if (catalogo is not { } actual)
         {
             <h1 class="gestion-titulo">Catálogo no encontrado</h1>
-            <a href="administracion/catalogos" class="btn gestion-neutro rounded-pill">Volver a catálogos</a>
+            <a href="@RutaCatalogos" class="btn gestion-neutro rounded-pill">Volver a catálogos</a>
         }
         else
         {
@@ -20,7 +21,7 @@
                 <h1 class="gestion-titulo gestion-titulo-listado mb-0">@actual.Titulo</h1>
                 @if (actual.PermiteAltasYBajas)
                 {
-                    <a class="btn gestion-neutro rounded-pill fw-semibold" href="@($"{actual.Ruta}/nuevo")">Agregar</a>
+                    <a class="btn gestion-neutro rounded-pill fw-semibold" href="@($"{RutaCatalogos}/{actual.Tipo}/nuevo")">Agregar</a>
                 }
             </div>
             <form class="gestion-busqueda d-flex gap-2 mt-3" role="search" @onsubmit="Buscar" @onsubmit:preventDefault>
@@ -66,7 +67,7 @@
                                                 @onclick="() => PedirConfirmacionAsync(actual, entrada)">Eliminar</button>
                                     }
                                     <a class="btn gestion-principal gestion-accion rounded-pill fw-semibold ms-auto"
-                                       href="@($"{actual.Ruta}/{entrada.Id}")"
+                                       href="@($"{RutaCatalogos}/{actual.Tipo}/{entrada.Id}")"
                                        aria-label="@($"Detalle de {entrada.Descripcion}")">Detalle</a>
                                 </div>
                             </li>
@@ -98,8 +99,9 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        await CargarAccesoAsync();
         textoBusqueda = Busqueda ?? string.Empty;
-        var seleccion = DefinicionesCatalogo.Buscar(Tipo);
+        var seleccion = BuscarCatalogo(Tipo);
         if (catalogo == seleccion)
             return;
 

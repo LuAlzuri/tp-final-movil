@@ -5,7 +5,6 @@ namespace Turnero.App.Catalogos;
 internal sealed record DefinicionCatalogo(string Tipo, string Titulo, string Ejemplo)
 {
     public bool PermiteAltasYBajas => Tipo != "estados";
-    public string Ruta => $"administracion/catalogos/{Tipo}";
     public string RutaApi => $"api/{Tipo}";
 }
 
@@ -23,6 +22,9 @@ internal static class DefinicionesCatalogo
 
     public static DefinicionCatalogo? Buscar(string? tipo) =>
         Todas.FirstOrDefault(catalogo => string.Equals(catalogo.Tipo, tipo, StringComparison.OrdinalIgnoreCase));
+
+    public static IReadOnlyList<DefinicionCatalogo> ParaVeterinario { get; } =
+        Todas.Where(catalogo => catalogo.Tipo is "servicios" or "tratamientos" or "patologias").ToArray();
 }
 
 internal sealed record EntradaCatalogo(int Id, string Descripcion);

@@ -1,11 +1,13 @@
 @page "/administracion/catalogos/{Tipo}/nuevo"
+@page "/veterinario/catalogos/{Tipo}/nuevo"
 @page "/administracion/catalogos/{Tipo}/{Id:int}/editar"
-@attribute [Authorize(Roles = Roles.Administrador)]
+@page "/veterinario/catalogos/{Tipo}/{Id:int}/editar"
+@attribute [Authorize(Roles = SeccionesInicio.RolesConMenu)]
+@inherits PaginaCatalogos
 @layout InicioLayout
 @using Microsoft.JSInterop
 @using Turnero.App.Catalogos
 @inject CatalogosApi Api
-@inject NavigationManager Navegacion
 @inject IJSRuntime Js
 @implements IDisposable
 
@@ -48,7 +50,7 @@
         else
         {
             <p>Catálogo no encontrado.</p>
-            <a href="administracion/catalogos" class="btn gestion-neutro rounded-pill">Volver a catálogos</a>
+            <a href="@RutaCatalogos" class="btn gestion-neutro rounded-pill">Volver a catálogos</a>
         }
     </div>
 </section>
@@ -67,7 +69,11 @@
     protected override async Task OnParametersSetAsync()
     {
         var version = ++versionCarga;
-        catalogo = DefinicionesCatalogo.Buscar(Tipo);
+        await CargarAccesoAsync();
+        if (version != versionCarga)
+            return;
+
+        catalogo = BuscarCatalogo(Tipo);
         datos = null;
         error = null;
         if (catalogo is not { } actual)
@@ -125,7 +131,7 @@
     private async Task VolverAsync()
     {
         if (!await Js.InvokeAsync<bool>("veteApp.volver"))
-            Navegacion.NavigateTo($"/{catalogo!.Ruta}", replace: true);
+            Navegacion.NavigateTo($"/{RutaCatalogos}/{catalogo!.Tipo}", replace: true);
     }
 
     public void Dispose()

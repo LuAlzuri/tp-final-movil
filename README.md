@@ -72,12 +72,10 @@ La documentación sigue en proceso de finalización.
 | Rol | Caso de uso | Pantalla o acción en la app | Estado |
 | --- | --- | --- | --- |
 | Todos | Iniciar y cerrar sesión. | Inicio de sesión y menú del rol | Realizado |
-| Todos | Consultar el perfil propio. | Falta la pantalla de perfil | Pendiente |
 | Todos | Cambiar la contraseña propia. | Falta el formulario de cambio de contraseña | Pendiente |
 | Tutor | Consultar sus perros. | Inicio del tutor y menú de cada mascota | Realizado |
 | Tutor | Consultar cupos y servicios. | Solicitar turno | Realizado |
 | Tutor | Solicitar un turno con uno a diez servicios. | Solicitar turno → Confirmar | Realizado |
-| Tutor | Modificar los servicios de un turno pendiente. | Falta la acción en Estados de turnos | Pendiente |
 | Tutor | Cancelar un turno pendiente o aprobado. | Estados de turnos → Cancelar | Realizado |
 | Tutor | Consultar el estado y el historial de sus turnos. | Estados de turnos y Consultar historial | Realizado |
 | Veterinario | Gestionar tutores y teléfonos. | Listado de tutores → Detalle | Realizado |
@@ -86,7 +84,7 @@ La documentación sigue en proceso de finalización.
 | Veterinario | Consultar la ficha del perro y sus patologías. | Detalle del perro | Realizado |
 | Veterinario | Asignar, editar y quitar patologías de un perro. | Faltan las acciones en Detalle del perro | Pendiente |
 | Veterinario | Gestionar cupos diarios y consultar los turnos aprobados de cada fecha. | Cupos | Realizado |
-| Veterinario | Gestionar los catálogos de servicios, tratamientos y patologías. | Falta el acceso para el rol Veterinario | Pendiente |
+| Veterinario | Gestionar los catálogos de servicios, tratamientos y patologías. | Gestionar catálogos | Realizado |
 | Veterinario | Consultar, aprobar, rechazar y cancelar turnos según su estado. | Turnos → Detalle del turno | Realizado |
 | Veterinario | Completar la atención y registrar los servicios realizados y las observaciones. | Detalle del turno → Completar | Realizado |
 | Veterinario | Registrar tratamientos y sus motivos al completar un turno. | Falta la selección de tratamientos en Completar | Pendiente |

@@ -1,18 +1,23 @@
 @page "/administracion/catalogos"
-@attribute [Authorize(Roles = Roles.Administrador)]
+@page "/veterinario/catalogos"
+@attribute [Authorize(Roles = SeccionesInicio.RolesConMenu)]
+@inherits PaginaCatalogos
 @layout InicioLayout
-@using Turnero.App.Catalogos
 
 <section class="gestion-pantalla">
     <div class="gestion-panel">
         <h1 class="gestion-titulo gestion-titulo-listado mb-0">Catálogos</h1>
+        @if (CatalogosPermitidos.Count == 0)
+        {
+            <a href="@RutaCatalogos" class="btn gestion-neutro rounded-pill mt-3">Volver a catálogos</a>
+        }
         <ul class="gestion-listado list-unstyled d-grid mt-3 mb-0">
-            @foreach (var catalogo in DefinicionesCatalogo.Todas)
+            @foreach (var catalogo in CatalogosPermitidos)
             {
                 <li class="gestion-tarjeta">
                     <h2 class="gestion-nombre">@catalogo.Titulo</h2>
                     <div class="d-flex justify-content-end">
-                        <a href="@catalogo.Ruta" class="btn gestion-principal gestion-accion rounded-pill fw-semibold"
+                        <a href="@($"{RutaCatalogos}/{catalogo.Tipo}")" class="btn gestion-principal gestion-accion rounded-pill fw-semibold"
                            aria-label="@($"Ver {catalogo.Titulo.ToLowerInvariant()}")">Ver</a>
                     </div>
                 </li>
@@ -20,3 +25,7 @@
         </ul>
     </div>
 </section>
+
+@code {
+    protected override Task OnParametersSetAsync() => CargarAccesoAsync();
+}
