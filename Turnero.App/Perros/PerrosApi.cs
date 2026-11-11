@@ -9,7 +9,7 @@ internal sealed record Perro(int Id, int TutorId, string Nombre, DateOnly FechaN
     bool Reactivo, bool CalVacCom, int GrupoEtarioId, int TamanioId, List<PatologiaPerro> Patologias,
     string? ImagenUrl = null);
 
-internal sealed record PatologiaPerro(string Descripcion, bool Controlado, string? Observacion);
+public sealed record PatologiaPerro(string Descripcion, bool Controlado, string? Observacion, int PatologiaId = 0);
 
 internal sealed class DatosPerro
 {
@@ -81,5 +81,38 @@ internal sealed class PerrosApi(ApiGestion api, HttpClient cliente)
     public async Task EliminarAsync(int id, CancellationToken ct)
     {
         using var respuesta = await api.EnviarAsync(HttpMethod.Delete, $"{Ruta}/{id}", ct, recurso: "perros");
+    }
+
+    public async Task GuardarPatologiasAsync(int id, List<PatologiaPerro> originales,
+        IReadOnlyList<PatologiaPerro> seleccionadas, CancellationToken ct)
+    {
+        var eliminadas = originales.Where(anterior => seleccionadas.All(actual => actual.PatologiaId != anterior.PatologiaId)).ToArray();
+        var cambios = seleccionadas.Where(actual => !originales.Contains(actual)).ToArray();
+        if (eliminadas.Length == 0 && cambios.Length == 0)
+            return;
+
+        var registradas = (await ObtenerAsync(id, ct)).Patologias.ToDictionary(patologia => patologia.PatologiaId);
+        var ruta = $"{Ruta}/{id}/patologias";
+        foreach (var eliminada in eliminadas)
+        {
+            if (registradas.ContainsKey(eliminada.PatologiaId))
+            {
+                using var respuesta = await api.EnviarAsync(HttpMethod.Delete, $"{ruta}/{eliminada.PatologiaId}", ct, recurso: "perros");
+            }
+            originales.Remove(eliminada);
+        }
+
+        foreach (var cambio in cambios)
+        {
+            var existe = registradas.TryGetValue(cambio.PatologiaId, out var actual);
+            if (actual is null || actual.Controlado != cambio.Controlado || actual.Observacion != cambio.Observacion)
+            {
+                using var contenido = JsonContent.Create(new { cambio.PatologiaId, cambio.Controlado, cambio.Observacion });
+                using var respuesta = await api.EnviarAsync(existe ? HttpMethod.Put : HttpMethod.Post,
+                    existe ? $"{ruta}/{cambio.PatologiaId}" : ruta, ct, contenido, recurso: "perros");
+            }
+            originales.RemoveAll(patologia => patologia.PatologiaId == cambio.PatologiaId);
+            originales.Add(cambio);
+        }
     }
 }

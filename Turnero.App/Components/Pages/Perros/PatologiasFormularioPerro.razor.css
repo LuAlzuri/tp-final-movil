@@ -1,0 +1,10 @@
+.btn.patologia-observaciones {
+    --bs-btn-color: #896300;
+    --bs-btn-hover-color: #624700;
+    --bs-btn-active-color: #624700;
+    --bs-btn-focus-shadow-rgb: 158, 122, 39;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    font-size: 1.15rem;
+}

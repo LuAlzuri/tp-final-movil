@@ -1,0 +1,18 @@
+.completar-servicio {
+    min-height: 2.75rem;
+    padding: .6rem .8rem;
+    border: 1px solid #d9e4e3;
+    border-radius: .85rem;
+    background: #f7faf9;
+    cursor: pointer;
+}
+
+.completar-servicio-marcado {
+    border-color: #78bdb8;
+    background: #e3f3f0;
+}
+
+.completar-servicio .form-check-input:checked {
+    background-color: #248c8d;
+    border-color: #248c8d;
+}

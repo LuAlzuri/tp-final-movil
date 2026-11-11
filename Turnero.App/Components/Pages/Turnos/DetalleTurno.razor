@@ -146,8 +146,6 @@
                             }
                             else
                             {
-                                <button type="button" class="btn gestion-principal rounded-pill"
-                                        @onclick="() => Elegir(EstadoTurno.Completado)">Completar</button>
                                 <button type="button" class="btn btn-danger rounded-pill"
                                         @onclick="() => Elegir(EstadoTurno.CanceladoPorVeterinario)">Cancelar turno</button>
                             }
@@ -164,30 +162,11 @@
                                        @bind="cuposRequeridos" @bind:event="oninput" />
                             </div>
                         }
-                        else if (elegido == EstadoTurno.Completado)
-                        {
-                            <fieldset disabled="@guardando" class="mb-3">
-                                <legend class="h6 fw-semibold">Servicios realizados</legend>
-                                @foreach (var servicio in registro.Servicios)
-                                {
-                                    <label class="d-flex align-items-center gap-2 py-2">
-                                        <input type="checkbox" class="form-check-input mt-0"
-                                               checked="@serviciosRealizados.Contains(servicio.ServicioId)"
-                                               @onchange="args => MarcarServicio(servicio.ServicioId, args.Value)" />
-                                        @servicio.Descripcion
-                                    </label>
-                                }
-                                <label class="form-label fw-semibold mt-2" for="observaciones-completar">Observaciones</label>
-                                <textarea id="observaciones-completar" class="form-control" maxlength="1000"
-                                          rows="2" @bind="observaciones"></textarea>
-                            </fieldset>
-                        }
                         <p>@(elegido switch
                         {
                             EstadoTurno.Aprobado => "¿Confirmás la aprobación del turno?",
                             EstadoTurno.Rechazado => "¿Confirmás el rechazo del turno?",
-                            EstadoTurno.CanceladoPorVeterinario => "¿Confirmás la cancelación del turno?",
-                            _ => "¿Confirmás que querés marcar el turno como completado?"
+                            _ => "¿Confirmás la cancelación del turno?"
                         })</p>
                         <div class="d-flex flex-wrap gap-2">
                             <button type="button" class="btn gestion-neutro rounded-pill" disabled="@guardando"
@@ -206,7 +185,6 @@
     [Parameter] public int Id { get; set; }
 
     private readonly CancellationTokenSource cancelacion = new();
-    private readonly HashSet<int> serviciosRealizados = [];
     private Turno? turno;
     private Perro? paciente;
     private EstadoTurno? destino;
@@ -214,7 +192,6 @@
     private string? errorPaciente;
     private string? errorCambio;
     private string? aviso;
-    private string? observaciones;
     private string? cuposRequeridos;
     private bool mostrarCambio;
     private bool guardando;
@@ -275,17 +252,7 @@
     {
         destino = estado;
         errorCambio = null;
-        serviciosRealizados.Clear();
-        observaciones = turno?.Observaciones;
         cuposRequeridos = turno?.CuposReservados.ToString(System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    private void MarcarServicio(int id, object? marcado)
-    {
-        if (marcado is true)
-            serviciosRealizados.Add(id);
-        else
-            serviciosRealizados.Remove(id);
     }
 
     private async Task ConfirmarCambioAsync()
@@ -310,8 +277,7 @@
         aviso = null;
         try
         {
-            await Api.CambiarEstadoAsync(registro, elegido, serviciosRealizados.ToArray(), observaciones,
-                cantidad, cancelacion.Token);
+            await Api.CambiarEstadoAsync(registro, elegido, cantidad, cancelacion.Token);
             if (version == versionCarga && !cancelacion.IsCancellationRequested)
             {
                 aviso = "El estado del turno se actualizó.";
@@ -333,7 +299,7 @@
     private async Task VolverAsync()
     {
         if (!await Js.InvokeAsync<bool>("veteApp.volver"))
-            Navegacion.NavigateTo("/veterinario/turnos", replace: true);
+            Navegacion.NavigateTo("/veterinario/turnos/solicitudes", replace: true);
     }
 
     public void Dispose()

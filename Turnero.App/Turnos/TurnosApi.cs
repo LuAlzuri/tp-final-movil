@@ -19,6 +19,7 @@ internal sealed record Turno(int Id, int PerroId, string PerroNombre, EstadoTurn
 
 internal sealed record ServicioTurno(int ServicioId, string Descripcion, bool Completado);
 internal sealed record TratamientoTurno(string Descripcion, string? Razon);
+internal sealed record TratamientoAplicado(int TratamientoId, string? Razon);
 
 internal sealed class TurnosApi(ApiGestion api)
 {
@@ -26,10 +27,13 @@ internal sealed class TurnosApi(ApiGestion api)
     public const int TamanoPagina = 20;
     public const int MaximaPagina = 1_000_000;
 
-    public async Task<List<Turno>> ListarAsync(int pagina, CancellationToken ct)
+    public async Task<List<Turno>> ListarAsync(int pagina, CancellationToken ct, EstadoTurno? estado = null)
     {
-        using var respuesta = await api.EnviarAsync(HttpMethod.Get,
-            $"{Ruta}?pagina={pagina}&tamano={TamanoPagina}", ct, recurso: "turnos");
+        var ruta = $"{Ruta}?pagina={pagina}&tamano={TamanoPagina}";
+        if (estado is { } filtro)
+            ruta += $"&estadoId={(int)filtro}";
+
+        using var respuesta = await api.EnviarAsync(HttpMethod.Get, ruta, ct, recurso: "turnos");
         return await ApiGestion.LeerAsync<List<Turno>>(respuesta, ct);
     }
 
@@ -65,24 +69,26 @@ internal sealed class TurnosApi(ApiGestion api)
             ct, recurso: "turnos");
 
     public async Task CambiarEstadoAsync(Turno turno, EstadoTurno destino,
-        IReadOnlyCollection<int> serviciosCompletados, string? observaciones, int? cantidad, CancellationToken ct)
+        int? cantidad, CancellationToken ct)
     {
         var accion = destino switch
         {
             EstadoTurno.Aprobado => "aprobar",
             EstadoTurno.Rechazado => "rechazar",
             EstadoTurno.CanceladoPorVeterinario => "cancelar",
-            EstadoTurno.Completado => "completar",
             _ => throw new ArgumentOutOfRangeException(nameof(destino))
         };
-        object? datos = destino switch
-        {
-            EstadoTurno.Aprobado => new { Cantidad = cantidad, turno.ObservacionCupo },
-            EstadoTurno.Completado => new { ServicioIdsCompletados = serviciosCompletados, Observaciones = observaciones },
-            _ => null
-        };
-        using var contenido = datos is null ? null : JsonContent.Create(datos);
+        using var contenido = destino == EstadoTurno.Aprobado
+            ? JsonContent.Create(new { Cantidad = cantidad, turno.ObservacionCupo })
+            : null;
         using var respuesta = await api.EnviarAsync(HttpMethod.Post, $"{Ruta}/{turno.Id}/{accion}",
             ct, contenido, recurso: "turnos");
+    }
+
+    public async Task CompletarAsync(int id, IReadOnlyCollection<int> serviciosRealizados,
+        IReadOnlyCollection<TratamientoAplicado> tratamientos, string? observaciones, CancellationToken ct)
+    {
+        using var contenido = JsonContent.Create(new { ServicioIdsCompletados = serviciosRealizados, Tratamientos = tratamientos, Observaciones = observaciones });
+        using var respuesta = await api.EnviarAsync(HttpMethod.Post, $"{Ruta}/{id}/completar", ct, contenido, recurso: "turnos");
     }
 }

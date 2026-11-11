@@ -1,0 +1,25 @@
+@page "/veterinario/turnos"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo gestion-titulo-listado mb-0">Turnos</h1>
+        <ul class="gestion-listado list-unstyled d-grid mt-3 mb-0">
+            <li class="gestion-tarjeta">
+                <h2 class="gestion-nombre">Gestionar solicitudes</h2>
+                <div class="d-flex justify-content-end">
+                    <a href="veterinario/turnos/solicitudes" aria-label="Ver gestión de solicitudes"
+                       class="btn gestion-principal gestion-accion rounded-pill fw-semibold">Ver</a>
+                </div>
+            </li>
+            <li class="gestion-tarjeta">
+                <h2 class="gestion-nombre">Completar turno</h2>
+                <div class="d-flex justify-content-end">
+                    <a href="veterinario/turnos/completar" aria-label="Ver turnos para completar"
+                       class="btn gestion-principal gestion-accion rounded-pill fw-semibold">Ver</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+</section>
