@@ -11,6 +11,18 @@ namespace turnero_peluqueria.Controllers;
 [Authorize(Roles = Usuario.RolAdministrador)]
 public class ReportesController(ReportesService reportes) : ControllerBase
 {
+    [HttpGet("frecuencia-solicitudes/datos")]
+    public Task<FrecuenciaSolicitudesDatos> ConsultarFrecuencia([FromQuery] PeriodoReporteSolicitud periodo, CancellationToken ct) =>
+        reportes.ConsultarFrecuenciaAsync(periodo, ct);
+
+    [HttpGet("servicios-completos/datos")]
+    public Task<ServiciosCompletosDatos> ConsultarServiciosCompletos([FromQuery] PeriodoReporteSolicitud periodo, CancellationToken ct) =>
+        reportes.ConsultarServiciosCompletosAsync(periodo, ct);
+
+    [HttpGet("servicios-incompletos/datos")]
+    public Task<ServiciosIncompletosDatos> ConsultarServiciosIncompletos([FromQuery] PeriodoReporteSolicitud periodo, CancellationToken ct) =>
+        reportes.ConsultarServiciosIncompletosAsync(periodo, ct);
+
     [HttpGet("frecuencia-solicitudes")]
     [ProducesResponseType<FileContentResult>(StatusCodes.Status200OK, "application/pdf")]
     public async Task<IActionResult> FrecuenciaSolicitudes([FromQuery] PeriodoReporteSolicitud periodo, CancellationToken ct) =>

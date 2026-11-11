@@ -1,7 +1,9 @@
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using turnero_peluqueria.Data;
+using turnero_peluqueria.DTOs;
 using turnero_peluqueria.Entities;
 
 namespace turnero_peluqueria.Verificaciones;
@@ -52,6 +54,7 @@ internal static partial class VerificacionAutenticacion
             var ruta = "/api/reportes/" + reporte;
             Autorizar(cliente, vet.Token);
             await EsperarCodigo(cliente.GetAsync(ruta + periodo), HttpStatusCode.Forbidden, "Solo el administrador descarga reportes");
+            await EsperarCodigo(cliente.GetAsync(ruta + "/datos" + periodo), HttpStatusCode.Forbidden, "Solo el administrador consulta reportes");
             Autorizar(cliente, tokenAdmin);
             using var respuesta = await cliente.GetAsync(ruta + periodo);
             Verificar(respuesta.StatusCode == HttpStatusCode.OK && respuesta.Content.Headers.ContentType?.MediaType == "application/pdf"
@@ -62,6 +65,15 @@ internal static partial class VerificacionAutenticacion
             if (!string.IsNullOrWhiteSpace(carpeta))
                 await File.WriteAllBytesAsync(Path.Combine(carpeta, reporte + ".pdf"), bytes);
         }
+
+        var frecuencia = await cliente.GetFromJsonAsync<FrecuenciaSolicitudesDatos>("/api/reportes/frecuencia-solicitudes/datos" + periodo);
+        Verificar(frecuencia is { Total: 4 } && frecuencia.Solicitudes.SequenceEqual([new(new DateOnly(2026, 3, 10), 4)]),
+            "La frecuencia agrupa las solicitudes por día argentino");
+        var completos = await cliente.GetFromJsonAsync<ServiciosCompletosDatos>("/api/reportes/servicios-completos/datos" + periodo);
+        Verificar(completos is { Total: 1 }, "Solo se cuentan los turnos finalizados con todos los servicios realizados");
+        var incompletos = await cliente.GetFromJsonAsync<ServiciosIncompletosDatos>("/api/reportes/servicios-incompletos/datos" + periodo);
+        Verificar(incompletos is { Total: 2 } && incompletos.Patologias.SequenceEqual([new("Dermatitis", 2)])
+            && incompletos.Observaciones.Count == 2, "Los datos de servicios incompletos incluyen patologías y observaciones");
 
         await EsperarCodigo(cliente.GetAsync("/api/reportes/frecuencia-solicitudes?desde=2026-03-11&hasta=2026-03-10"),
             HttpStatusCode.BadRequest, "Se rechaza un período invertido");

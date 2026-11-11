@@ -1,0 +1,204 @@
+@page "/administracion/informes/{Tipo}"
+@attribute [Authorize(Roles = Roles.Administrador)]
+@layout InicioLayout
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.Maui.ApplicationModel.DataTransfer
+@using Microsoft.Maui.Storage
+@using Turnero.App.Reportes
+@inject ReportesApi Api
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        @if (informe is not { } actual)
+        {
+            <h1 class="gestion-titulo">Informe no encontrado</h1>
+            <a href="administracion/informes" class="btn gestion-neutro rounded-pill">Volver a informes</a>
+        }
+        else
+        {
+            <h1 class="gestion-titulo gestion-titulo-listado mb-3">@actual.Titulo</h1>
+            <EditForm Model="periodo" OnValidSubmit="EjecutarAsync" novalidate class="gestion-tarjeta gestion-formulario">
+                <DataAnnotationsValidator />
+                <div class="row g-2">
+                    <div class="col-12 col-sm-6">
+                        <label for="informe-desde" class="form-label fw-semibold">Desde</label>
+                        <InputDate id="informe-desde" class="form-control" @bind-Value="periodo.Desde" disabled="@ocupado" />
+                        <ValidationMessage For="() => periodo.Desde" />
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label for="informe-hasta" class="form-label fw-semibold">Hasta</label>
+                        <InputDate id="informe-hasta" class="form-control" @bind-Value="periodo.Hasta" disabled="@ocupado" />
+                        <ValidationMessage For="() => periodo.Hasta" />
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="submit" class="btn gestion-principal rounded-pill fw-semibold" disabled="@ocupado">
+                        @(ocupado ? "Procesando…" : Pdf ? "Generar PDF" : "Consultar")
+                    </button>
+                </div>
+            </EditForm>
+            @if (error is not null)
+            {
+                <p class="alert alert-danger mt-3 mb-0" role="alert">@error</p>
+            }
+            @if (archivo is not null)
+            {
+                <div class="gestion-tarjeta mt-3">
+                    <p role="status">PDF generado para el período @periodoResultado.</p>
+                    <button type="button" class="btn gestion-principal rounded-pill fw-semibold"
+                            disabled="@ocupado" @onclick="CompartirAsync">Compartir PDF</button>
+                </div>
+            }
+            @if (datos is { } resultado)
+            {
+                <section class="gestion-tarjeta mt-3" aria-labelledby="resultado-informe">
+                    <h2 id="resultado-informe" class="gestion-nombre">Resultados</h2>
+                    <p class="small">@periodoResultado</p>
+                    <GrillaInforme Titulo="Total del período" Primera="Indicador" Segunda="Total"
+                                   Filas="@(new[] { (actual.EtiquetaTotal, resultado.Total.ToString("N0")) })" />
+                    @if (resultado.Solicitudes is { } solicitudes)
+                    {
+                        <h3 class="h6 fw-bold mt-3">Solicitudes por día</h3>
+                        <GrillaInforme Titulo="Solicitudes por día" Primera="Fecha" Segunda="Solicitudes"
+                                       Filas="@(solicitudes.Select(fila => (fila.Fecha.ToString("dd/MM/yyyy"), fila.Cantidad.ToString("N0"))))"
+                                       SinDatos="No hubo solicitudes en el período." />
+                    }
+                    @if (resultado.Patologias is { } patologias)
+                    {
+                        <h3 class="h6 fw-bold mt-3">Patologías asociadas</h3>
+                        <GrillaInforme Titulo="Patologías asociadas" Primera="Patología" Segunda="Turnos"
+                                       Filas="@(patologias.Select(fila => (fila.Descripcion, fila.Cantidad.ToString("N0"))))"
+                                       SinDatos="No hay patologías asociadas." />
+                    }
+                    @if (resultado.Observaciones is { } observaciones)
+                    {
+                        <h3 class="h6 fw-bold mt-3">Observaciones de los turnos</h3>
+                        <GrillaInforme Titulo="Observaciones de los turnos" Primera="Turno y fecha" Segunda="Observación"
+                                       Filas="@(observaciones.Select(fila => ($"#{fila.TurnoId} · {fila.Fecha:dd/MM/yyyy}", fila.Observacion)))"
+                                       SinDatos="No hay observaciones registradas." />
+                    }
+                </section>
+            }
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public string? Tipo { get; set; }
+    [SupplyParameterFromQuery(Name = "pdf")] public bool Pdf { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private PeriodoInforme periodo = new();
+    private DefinicionInforme? informe;
+    private DatosInforme? datos;
+    private string? archivo;
+    private string? periodoResultado;
+    private string? error;
+    private bool ocupado;
+    private int version;
+
+    protected override void OnParametersSet()
+    {
+        version++;
+        informe = DefinicionInforme.Todas.FirstOrDefault(item => item.Tipo == Tipo);
+        periodo = new();
+        datos = null;
+        archivo = error = periodoResultado = null;
+    }
+
+    private async Task EjecutarAsync()
+    {
+        if (ocupado || informe is not { } actual || periodo.Desde is not DateOnly desde || periodo.Hasta is not DateOnly hasta)
+            return;
+
+        var solicitud = version;
+        var ct = cancelacion.Token;
+        ocupado = true;
+        error = archivo = periodoResultado = null;
+        datos = null;
+        try
+        {
+            if (Pdf)
+            {
+                var contenido = await Api.GenerarPdfAsync(actual, desde, hasta, ct);
+                var carpeta = Path.Combine(FileSystem.CacheDirectory, "sharing-root", Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(carpeta);
+                var ruta = Path.Combine(carpeta, $"{actual.Tipo}-{desde:yyyy-MM-dd}-{hasta:yyyy-MM-dd}.pdf");
+                await File.WriteAllBytesAsync(ruta, contenido, ct);
+                if (solicitud == version)
+                    archivo = ruta;
+            }
+            else
+            {
+                var resultado = await Api.ConsultarAsync(actual, desde, hasta, ct);
+                if (solicitud == version)
+                    datos = resultado;
+            }
+
+            if (solicitud == version)
+                periodoResultado = $"{desde:dd/MM/yyyy} al {hasta:dd/MM/yyyy}";
+        }
+        catch (GestionApiException ex)
+        {
+            if (solicitud == version)
+                error = ex.Message;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            if (solicitud == version)
+                error = "No se pudo guardar el PDF en el dispositivo.";
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        finally
+        {
+            ocupado = false;
+        }
+    }
+
+    private async Task CompartirAsync()
+    {
+        if (ocupado || archivo is not { } ruta || informe is not { } actual)
+            return;
+
+        error = null;
+        ocupado = true;
+        try
+        {
+            await Share.Default.RequestAsync(new ShareFileRequest
+            {
+                Title = actual.Titulo,
+                File = new ShareFile(ruta, "application/pdf")
+            });
+        }
+        catch (Exception)
+        {
+            error = "No se pudo compartir el PDF desde este dispositivo.";
+        }
+        finally
+        {
+            ocupado = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+
+    private sealed class PeriodoInforme : IValidatableObject
+    {
+        [Required(ErrorMessage = "Indicá la fecha inicial.")]
+        public DateOnly? Desde { get; set; }
+
+        [Required(ErrorMessage = "Indicá la fecha final.")]
+        public DateOnly? Hasta { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (Desde > Hasta)
+                yield return new ValidationResult("La fecha final debe ser igual o posterior a la inicial.", [nameof(Hasta)]);
+        }
+    }
+}

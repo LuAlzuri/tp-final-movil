@@ -23,6 +23,22 @@ public sealed class ReportesService(AppDbContext db)
     public async Task<byte[]> FrecuenciaSolicitudesAsync(PeriodoReporteSolicitud solicitud, CancellationToken ct)
     {
         var periodo = Periodo.Crear(solicitud);
+        var datos = await ConsultarFrecuenciaAsync(periodo, ct);
+
+        return Generar("Frecuencia de solicitudes", periodo,
+            "Solicitudes registradas por día según la fecha de creación, cualquiera sea el estado posterior.", contenido =>
+            {
+                contenido.Item().Element(c => Total(c, "Solicitudes en el período", datos.Total));
+                contenido.Item().Element(c => Tabla(c, "Fecha de solicitud", "Solicitudes",
+                    datos.Solicitudes.Select(fila => (Fecha(fila.Fecha), Numero(fila.Cantidad))), "No hubo solicitudes en el período."));
+            });
+    }
+
+    public Task<FrecuenciaSolicitudesDatos> ConsultarFrecuenciaAsync(PeriodoReporteSolicitud solicitud, CancellationToken ct) =>
+        ConsultarFrecuenciaAsync(Periodo.Crear(solicitud), ct);
+
+    private async Task<FrecuenciaSolicitudesDatos> ConsultarFrecuenciaAsync(Periodo periodo, CancellationToken ct)
+    {
         var porDia = new SortedDictionary<DateOnly, int>();
         var fechas = db.Turnos.Where(t => t.FechaSolicitud >= periodo.InicioUtc && t.FechaSolicitud < periodo.FinUtc)
             .Select(t => t.FechaSolicitud);
@@ -32,30 +48,61 @@ public sealed class ReportesService(AppDbContext db)
             porDia[dia] = porDia.GetValueOrDefault(dia) + 1;
         }
 
-        return Generar("Frecuencia de solicitudes", periodo,
-            "Solicitudes registradas por día según la fecha de creación, cualquiera sea el estado posterior.", contenido =>
-            {
-                contenido.Item().Element(c => Total(c, "Solicitudes en el período", porDia.Values.Sum()));
-                contenido.Item().Element(c => Tabla(c, "Fecha de solicitud", "Solicitudes",
-                    porDia.Select(fila => (Fecha(fila.Key), Numero(fila.Value))), "No hubo solicitudes en el período."));
-            });
+        return new(porDia.Values.Sum(), porDia.Select(fila => new SolicitudesPorDia(fila.Key, fila.Value)).ToArray());
     }
 
     public async Task<byte[]> ServiciosCompletosAsync(PeriodoReporteSolicitud solicitud, CancellationToken ct)
     {
         var periodo = Periodo.Crear(solicitud);
-        var cantidad = await TurnosCompletados(periodo).CountAsync(t =>
-            db.ServiciosPorTurno.Any(s => s.TurnoId == t.Id)
-            && !db.ServiciosPorTurno.Any(s => s.TurnoId == t.Id && !s.Completado), ct);
+        var datos = await ConsultarServiciosCompletosAsync(periodo, ct);
 
         return Generar("Turnos con servicio completo", periodo,
             "Se cuentan turnos finalizados en el período con al menos un servicio registrado y todos sus servicios realizados.",
-            contenido => contenido.Item().Element(c => Total(c, "Turnos con todos los servicios realizados", cantidad)));
+            contenido => contenido.Item().Element(c => Total(c, "Turnos con todos los servicios realizados", datos.Total)));
     }
+
+    public Task<ServiciosCompletosDatos> ConsultarServiciosCompletosAsync(PeriodoReporteSolicitud solicitud, CancellationToken ct) =>
+        ConsultarServiciosCompletosAsync(Periodo.Crear(solicitud), ct);
+
+    private async Task<ServiciosCompletosDatos> ConsultarServiciosCompletosAsync(Periodo periodo, CancellationToken ct) =>
+        new(await TurnosCompletados(periodo).CountAsync(t =>
+            db.ServiciosPorTurno.Any(s => s.TurnoId == t.Id)
+            && !db.ServiciosPorTurno.Any(s => s.TurnoId == t.Id && !s.Completado), ct));
 
     public async Task<byte[]> ServiciosIncompletosAsync(PeriodoReporteSolicitud solicitud, CancellationToken ct)
     {
         var periodo = Periodo.Crear(solicitud);
+        var datos = await ConsultarServiciosIncompletosAsync(periodo, ct);
+
+        return Generar("Turnos con servicios incompletos", periodo,
+            "Se incluyen turnos finalizados en el período con al menos un servicio sin realizar.", contenido =>
+            {
+                contenido.Item().Element(c => Total(c, "Turnos con servicios incompletos", datos.Total));
+                contenido.Item().EnsureSpace(85).Column(seccion =>
+                {
+                    seccion.Spacing(6);
+                    seccion.Item().Text("Patologías asociadas").FontSize(14).SemiBold().FontColor(Azul);
+                    seccion.Item().Text("Se usan las patologías actuales de cada perro. Cada patología se cuenta una vez por turno.")
+                        .FontColor(Secundario);
+                    seccion.Item().Element(c => Tabla(c, "Patología", "Turnos",
+                        datos.Patologias.Select(p => (p.Descripcion, Numero(p.Cantidad))), "No hay patologías asociadas."));
+                });
+                contenido.Item().EnsureSpace(85).Column(seccion =>
+                {
+                    seccion.Spacing(6);
+                    seccion.Item().Text("Observaciones de los turnos").FontSize(14).SemiBold().FontColor(Azul);
+                    seccion.Item().Element(c => Tabla(c, "Turno y fecha de finalización", "Observación",
+                        datos.Observaciones.Select(t => ($"#{t.TurnoId} | {Fecha(t.Fecha)}", t.Observacion)),
+                        "No hay observaciones registradas.", segundaColumnaAncha: true));
+                });
+            });
+    }
+
+    public Task<ServiciosIncompletosDatos> ConsultarServiciosIncompletosAsync(PeriodoReporteSolicitud solicitud, CancellationToken ct) =>
+        ConsultarServiciosIncompletosAsync(Periodo.Crear(solicitud), ct);
+
+    private async Task<ServiciosIncompletosDatos> ConsultarServiciosIncompletosAsync(Periodo periodo, CancellationToken ct)
+    {
         var turnos = TurnosCompletados(periodo)
             .Where(t => db.ServiciosPorTurno.Any(s => s.TurnoId == t.Id && !s.Completado));
 
@@ -66,35 +113,15 @@ public sealed class ReportesService(AppDbContext db)
             join relacion in db.PerrosPatologias on turno.PerroId equals relacion.PerroId
             group relacion by new { relacion.PatologiaId, relacion.Patologia.Descripcion } into grupo
             orderby grupo.Count() descending, grupo.Key.Descripcion, grupo.Key.PatologiaId
-            select new { grupo.Key.Descripcion, Cantidad = grupo.Count() }).ToListAsync(ct);
+            select new PatologiaReporte(grupo.Key.Descripcion, grupo.Count())).ToListAsync(ct);
 
         var observaciones = await turnos.Where(t => t.Observaciones != null && t.Observaciones != "")
             .OrderBy(t => t.FechaEstado).ThenBy(t => t.Id)
             .Select(t => new { t.Id, t.FechaEstado, t.Observaciones }).ToListAsync(ct);
         await transaccion.CommitAsync(ct);
 
-        return Generar("Turnos con servicios incompletos", periodo,
-            "Se incluyen turnos finalizados en el período con al menos un servicio sin realizar.", contenido =>
-            {
-                contenido.Item().Element(c => Total(c, "Turnos con servicios incompletos", cantidad));
-                contenido.Item().EnsureSpace(85).Column(seccion =>
-                {
-                    seccion.Spacing(6);
-                    seccion.Item().Text("Patologías asociadas").FontSize(14).SemiBold().FontColor(Azul);
-                    seccion.Item().Text("Se usan las patologías actuales de cada perro. Cada patología se cuenta una vez por turno.")
-                        .FontColor(Secundario);
-                    seccion.Item().Element(c => Tabla(c, "Patología", "Turnos",
-                        patologias.Select(p => (p.Descripcion, Numero(p.Cantidad))), "No hay patologías asociadas."));
-                });
-                contenido.Item().EnsureSpace(85).Column(seccion =>
-                {
-                    seccion.Spacing(6);
-                    seccion.Item().Text("Observaciones de los turnos").FontSize(14).SemiBold().FontColor(Azul);
-                    seccion.Item().Element(c => Tabla(c, "Turno y fecha de finalización", "Observación",
-                        observaciones.Select(t => ($"#{t.Id} | {Fecha(FechaArgentina.DesdeUtc(t.FechaEstado))}", t.Observaciones!)),
-                        "No hay observaciones registradas.", segundaColumnaAncha: true));
-                });
-            });
+        return new(cantidad, patologias, observaciones.Select(t =>
+            new ObservacionReporte(t.Id, FechaArgentina.DesdeUtc(t.FechaEstado), t.Observaciones!)).ToArray());
     }
 
     private IQueryable<Turno> TurnosCompletados(Periodo periodo) =>
