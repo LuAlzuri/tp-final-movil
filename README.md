@@ -189,3 +189,32 @@ Las fotos se guardan en `turnero_peluqueria/wwwroot/uploads`. Al desplegar, esa 
 
 - [Diagrama entidad-relación](DER-turnero.svg).
 - [Documentación y diagramas de casos de uso](docs/Alzuri_Documentacion_proyectoFinal_completado.docx).
+
+## Hitos de la aplicación móvil
+
+| Rol | Caso de uso | Pantalla o acción en la app | Estado |
+| --- | --- | --- | --- |
+| Todos | Iniciar y cerrar sesión. | Inicio de sesión y menú del rol | Realizado |
+| Todos | Cambiar la contraseña propia. | Falta el formulario de cambio de contraseña | Pendiente |
+| Tutor | Consultar sus perros. | Inicio del tutor y menú de cada mascota | Realizado |
+| Tutor | Consultar cupos y servicios. | Solicitar turno | Realizado |
+| Tutor | Solicitar un turno con uno a diez servicios. | Solicitar turno → Confirmar | Realizado |
+| Tutor | Cancelar un turno pendiente o aprobado. | Estados de turnos → Cancelar | Realizado |
+| Tutor | Consultar el estado y el historial de sus turnos. | Estados de turnos y Consultar historial | Realizado |
+| Veterinario | Gestionar tutores y teléfonos. | Listado de tutores → Detalle | Realizado |
+| Veterinario | Gestionar perros y agregar o reemplazar sus fotos. | Detalle del tutor → Sus perros → Gestionar | Realizado |
+| Veterinario | Quitar la foto de un perro. | Falta la acción en Editar perro | Pendiente |
+| Veterinario | Consultar la ficha del perro y sus patologías. | Detalle del perro | Realizado |
+| Veterinario | Asignar, editar y quitar patologías de un perro. | Faltan las acciones en Detalle del perro | Pendiente |
+| Veterinario | Gestionar cupos diarios y consultar los turnos aprobados de cada fecha. | Cupos | Realizado |
+| Veterinario | Gestionar los catálogos de servicios, tratamientos y patologías. | Gestionar catálogos | Realizado |
+| Veterinario | Consultar, aprobar, rechazar y cancelar turnos según su estado. | Turnos → Detalle del turno | Realizado |
+| Veterinario | Completar la atención y registrar los servicios realizados y las observaciones. | Detalle del turno → Completar | Realizado |
+| Veterinario | Registrar tratamientos y sus motivos al completar un turno. | Falta la selección de tratamientos en Completar | Pendiente |
+| Veterinario | Consultar, aplicar y levantar vetos. | Faltan las acciones en Detalle del tutor | Pendiente |
+| Veterinario | Registrar una reserva presencial para un tutor con veto vigente. | Falta el formulario de reserva presencial | Pendiente |
+| Administrador | Gestionar veterinarios. | Gestionar veterinarios | Realizado |
+| Administrador | Gestionar catálogos. | Gestionar catálogos | Realizado |
+| Administrador | Consultar movimientos de auditoría. | Consultar auditoría → Movimientos | Realizado |
+| Administrador | Consultar errores de la API. | Consultar auditoría → Errores | Realizado |
+| Administrador | Consultar informes por período y generar sus PDF. | Generar informes | Realizado |
