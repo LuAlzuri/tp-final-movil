@@ -43,6 +43,9 @@ internal sealed class PerrosApi(ApiGestion api, HttpClient cliente)
     public Task<List<Perro>> ListarAsync(int tutorId, CancellationToken ct) =>
         api.ListarPaginadoAsync<Perro>($"{Ruta}?tutorId={tutorId}", ct, recurso: "perros");
 
+    public Task<List<Perro>> ListarPropiosAsync(CancellationToken ct) =>
+        api.ListarPaginadoAsync<Perro>(Ruta, ct, recurso: "perros");
+
     public async Task<Perro> ObtenerAsync(int id, CancellationToken ct)
     {
         using var respuesta = await api.EnviarAsync(HttpMethod.Get, $"{Ruta}/{id}", ct, recurso: "perros");

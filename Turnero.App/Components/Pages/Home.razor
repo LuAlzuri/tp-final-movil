@@ -19,10 +19,8 @@
             }
         </section>
     }
-    else
+    else if (context.User.IsInRole(Roles.Tutor))
     {
-        <section class="h-100 d-grid align-content-center text-center p-3">
-            <h1 class="h4 mb-0">En construcción · Tutor</h1>
-        </section>
+        <InicioTutor />
     }
 </AuthorizeView>

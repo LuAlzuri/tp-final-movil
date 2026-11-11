@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.JSInterop
 @inject SesionService Sesion
 @inject NavigationManager Navegacion
@@ -22,7 +23,32 @@
                 </button>
             </Authorized>
             <NotAuthorized>
-                <p class="inicio-saludo fw-bold mb-0">VeteApp</p>
+                <AuthorizeView Roles="@Roles.Tutor" Context="tutor">
+                    <Authorized>
+                        @if (EsMenuMascota(tutor.User))
+                        {
+                            <SectionOutlet SectionName="mascota-tutor" />
+                        }
+                        else
+                        {
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="inicio-tutor-icono rounded-circle" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" focusable="false">
+                                        <g transform="rotate(43 12 12)">
+                                            <rect x="5" y="10" width="14" height="4" rx="2" />
+                                            <circle cx="4.5" cy="9.5" r="3" /><circle cx="4.5" cy="14.5" r="3" />
+                                            <circle cx="19.5" cy="9.5" r="3" /><circle cx="19.5" cy="14.5" r="3" />
+                                        </g>
+                                    </svg>
+                                </span>
+                                <p class="inicio-saludo fw-bold mb-0">¡Bienvenido, @(tutor.User.Identity?.Name)!</p>
+                            </div>
+                        }
+                    </Authorized>
+                    <NotAuthorized>
+                        <p class="inicio-saludo fw-bold mb-0">VeteApp</p>
+                    </NotAuthorized>
+                </AuthorizeView>
             </NotAuthorized>
         </AuthorizeView>
     </header>
@@ -50,8 +76,11 @@
         </main>
 
         <AuthorizeView>
-            @{ var mostrarAtajos = MostrarAtajos(context.User); }
-            <footer class="inicio-pie d-flex justify-content-center align-items-center">
+            @{
+                var menuMascota = EsMenuMascota(context.User);
+                var mostrarAtajos = menuMascota || MostrarAtajos(context.User);
+            }
+            <footer class="inicio-pie d-flex justify-content-center align-items-center @(menuMascota ? "inicio-pie-mascota flex-row-reverse" : "")">
                 @if (mostrarAtajos)
                 {
                     <button type="button" class="btn inicio-atajo flex-fill" aria-label="Volver a la pantalla anterior"
@@ -62,10 +91,13 @@
                         <img src="images/inicio.svg" width="32" height="32" alt="" />
                     </a>
                 }
-                <button type="button" class="btn inicio-atajo @(mostrarAtajos ? "flex-fill" : "")"
-                        aria-label="Cerrar sesión" disabled="@cerrandoSesion" @onclick="CerrarSesionAsync">
-                    <img src="images/salir.svg" width="32" height="32" alt="" />
-                </button>
+                @if (!menuMascota)
+                {
+                    <button type="button" class="btn inicio-atajo @(mostrarAtajos ? "flex-fill" : "")"
+                            aria-label="Cerrar sesión" disabled="@cerrandoSesion" @onclick="CerrarSesionAsync">
+                        <img src="images/salir.svg" width="32" height="32" alt="" />
+                    </button>
+                }
             </footer>
         </AuthorizeView>
     </div>
@@ -74,6 +106,10 @@
 @code {
     private bool menuAbierto;
     private bool cerrandoSesion;
+    private bool EsMenuMascota(ClaimsPrincipal usuario) =>
+        usuario.IsInRole(Roles.Tutor) && Navegacion.ToBaseRelativePath(Navegacion.Uri)
+            .StartsWith("tutor/mascotas/", StringComparison.OrdinalIgnoreCase);
+
     private bool MostrarAtajos(ClaimsPrincipal usuario) =>
         SeccionesInicio.AreaPara(usuario) is { } area && Navegacion.ToBaseRelativePath(Navegacion.Uri)
             .StartsWith($"{area}/", StringComparison.OrdinalIgnoreCase);

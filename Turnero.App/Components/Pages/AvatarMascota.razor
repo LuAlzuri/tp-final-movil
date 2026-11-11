@@ -1,0 +1,18 @@
+<span class="tutor-avatar rounded-circle" aria-hidden="true">
+    @if (!fotoConError && Imagen is not null)
+    {
+        <img class="tutor-foto" src="@Imagen" alt="" @onerror="MostrarPatita" />
+    }
+    else
+    {
+        <img class="tutor-patita" src="images/patita.svg" alt="" />
+    }
+</span>
+
+@code {
+    [Parameter] public string? Imagen { get; set; }
+
+    private bool fotoConError;
+
+    private void MostrarPatita() => fotoConError = true;
+}

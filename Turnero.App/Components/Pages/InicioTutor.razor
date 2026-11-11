@@ -1,0 +1,62 @@
+@using Turnero.App.Perros
+@inject PerrosApi Api
+@implements IDisposable
+
+<FondoTutor>
+    <h1 id="tutor-mascotas" class="visually-hidden">Mis mascotas</h1>
+    @if (error is not null)
+    {
+        <p class="alert alert-danger" role="alert">@error</p>
+        <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+    }
+    else if (perros is null)
+    {
+        <p class="gestion-tarjeta mb-0" role="status">Cargando mascotas…</p>
+    }
+    else if (perros.Count == 0)
+    {
+        <p class="gestion-tarjeta mb-0" role="status">Todavía no tenés mascotas registradas.</p>
+    }
+    else
+    {
+        <ul class="tutor-mascotas list-unstyled d-grid mb-0">
+            @foreach (var perro in perros)
+            {
+                <li class="tutor-mascota gestion-tarjeta" @key="perro.Id">
+                    <a class="d-flex align-items-center" href="@($"tutor/mascotas/{perro.Id}")">
+                        <AvatarMascota Imagen="@Api.ResolverImagen(perro.ImagenUrl)" />
+                        <h2 class="tutor-nombre fw-bold text-break mb-0">@perro.Nombre</h2>
+                    </a>
+                </li>
+            }
+        </ul>
+    }
+</FondoTutor>
+
+@code {
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<Perro>? perros;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        error = null;
+        try
+        {
+            perros = await Api.ListarPropiosAsync(cancelacion.Token);
+        }
+        catch (GestionApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

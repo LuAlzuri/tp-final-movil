@@ -1,0 +1,109 @@
+@page "/tutor/mascotas/{Id:int}"
+@page "/tutor/mascotas/{Id:int}/{Opcion}"
+@attribute [Authorize(Roles = Roles.Tutor)]
+@layout InicioLayout
+@using Microsoft.AspNetCore.Components.Sections
+@using Turnero.App.Perros
+@inject PerrosApi Api
+@implements IDisposable
+
+<SectionContent SectionName="mascota-tutor">
+    @if (perro is { } mascota)
+    {
+        var imagen = Api.ResolverImagen(mascota.ImagenUrl);
+        <div class="mascota-cabecera">
+            <AvatarMascota @key="imagen" Imagen="@imagen" />
+            <h1 class="mascota-nombre fw-bold text-break mb-0">@mascota.Nombre</h1>
+        </div>
+    }
+    else
+    {
+        <div class="mascota-cabecera">
+            <h1 class="mascota-nombre fw-bold mb-0">Mascota</h1>
+        </div>
+    }
+</SectionContent>
+
+<FondoTutor>
+    @if (error is not null)
+    {
+        <p class="alert alert-danger" role="alert">@error</p>
+        <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+    }
+    else if (perro is null)
+    {
+        <p class="gestion-tarjeta mb-0" role="status">Cargando mascota…</p>
+    }
+    else if (Opcion is null)
+    {
+        <ul class="mascota-opciones list-unstyled d-grid mb-0">
+            @foreach (var (ruta, titulo) in Opciones)
+            {
+                <li class="mascota-opcion gestion-tarjeta d-flex flex-column">
+                    <h2 class="mascota-opcion-titulo fw-bold mb-0">@titulo</h2>
+                    <a class="btn mascota-ir rounded-pill fw-semibold align-self-end"
+                       href="@($"tutor/mascotas/{Id}/{ruta}")" aria-label="@($"Ir a {titulo.ToLowerInvariant()}")">Ir</a>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        var titulo = Array.Find(Opciones, opcion => opcion.Ruta == Opcion).Titulo;
+        <section class="gestion-tarjeta">
+            <h2 class="gestion-nombre mb-2">@(titulo ?? "Opción no encontrada")</h2>
+            @if (titulo is not null)
+            {
+                <p class="mb-0">En construcción.</p>
+            }
+            else
+            {
+                <a class="btn gestion-neutro rounded-pill" href="@($"tutor/mascotas/{Id}")">Volver al menú de la mascota</a>
+            }
+        </section>
+    }
+</FondoTutor>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [Parameter] public string? Opcion { get; set; }
+
+    private static readonly (string Ruta, string Titulo)[] Opciones =
+    [
+        ("solicitar-turno", "Solicitar turno"),
+        ("estados", "Verificar estados de turnos"),
+        ("historial", "Consultar historial")
+    ];
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private Perro? perro;
+    private string? error;
+    private int versionCarga;
+
+    protected override Task OnParametersSetAsync() => perro?.Id == Id ? Task.CompletedTask : CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        perro = null;
+        error = null;
+        try
+        {
+            var mascota = await Api.ObtenerAsync(Id, cancelacion.Token);
+            if (version == versionCarga)
+                perro = mascota;
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}
