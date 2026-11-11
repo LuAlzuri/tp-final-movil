@@ -13,7 +13,7 @@
         var imagen = Api.ResolverImagen(mascota.ImagenUrl);
         <div class="mascota-cabecera">
             <AvatarMascota @key="imagen" Imagen="@imagen" />
-            <h1 class="mascota-nombre fw-bold text-break mb-0">@mascota.Nombre</h1>
+            <h1 class="mascota-nombre fw-bold text-break mb-0">@(Opcion == "solicitar-turno" ? "Solicitar turno" : mascota.Nombre)</h1>
         </div>
     }
     else
@@ -47,6 +47,10 @@
             }
         </ul>
     }
+    else if (Opcion == "solicitar-turno")
+    {
+        <CuposDisponiblesTutor @key="Id" CupoId="@CupoId" />
+    }
     else
     {
         var titulo = Array.Find(Opciones, opcion => opcion.Ruta == Opcion).Titulo;
@@ -67,6 +71,7 @@
 @code {
     [Parameter] public int Id { get; set; }
     [Parameter] public string? Opcion { get; set; }
+    [SupplyParameterFromQuery(Name = "cupo")] public int? CupoId { get; set; }
 
     private static readonly (string Ruta, string Titulo)[] Opciones =
     [

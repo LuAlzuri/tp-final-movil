@@ -43,6 +43,7 @@ public sealed class ApiGestion(SesionService sesion)
                         "auditoria" => "Tu cuenta no tiene permiso para consultar auditorías.",
                         "turnos" => "Tu cuenta no tiene permiso para consultar turnos.",
                         "perros" => "Tu cuenta no tiene permiso para gestionar perros.",
+                        "cupos" => "Tu cuenta no tiene permiso para gestionar cupos.",
                         "tutores" or "telefonos" => "Tu cuenta no tiene permiso para gestionar tutores.",
                         _ => "Tu cuenta no tiene permiso para gestionar catálogos."
                     },
@@ -52,6 +53,7 @@ public sealed class ApiGestion(SesionService sesion)
                         "auditoria" => "El informe ya no está disponible.",
                         "turnos" => "El turno ya no está disponible.",
                         "perros" => "El perro o el tutor ya no está disponible.",
+                        "cupos" => "El cupo diario ya no está disponible.",
                         "tutores" => "El tutor ya no está disponible.",
                         "telefonos" => "El teléfono o el tutor ya no está disponible.",
                         _ => "La entrada ya no está disponible."
