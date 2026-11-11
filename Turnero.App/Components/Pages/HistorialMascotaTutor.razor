@@ -1,0 +1,120 @@
+@using Microsoft.JSInterop
+@using Turnero.App.Turnos
+@inject TurnosApi Api
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="historial-panel gestion-tarjeta" aria-labelledby="historial-turnos">
+    <h2 id="historial-turnos" class="historial-titulo fw-bold text-center">Turnos anteriores</h2>
+    @if (error is not null)
+    {
+        <p class="alert alert-danger" role="alert">@error</p>
+        <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+    }
+    else if (turnos is null)
+    {
+        <p class="mb-0" role="status">Cargando historial…</p>
+    }
+    else if (turnos.Count == 0)
+    {
+        <p class="mb-0" role="status">Esta mascota todavía no tiene turnos completados.</p>
+    }
+    else
+    {
+        <ul class="historial-lista list-unstyled d-grid mb-0">
+            @foreach (var turno in turnos)
+            {
+                <li class="historial-turno gestion-tarjeta" @key="turno.Id">
+                    <h3 class="historial-fecha fw-bold mb-3">
+                        <time datetime="@turno.FechaCupo.ToString("yyyy-MM-dd")">@turno.FechaCupo.ToString("dd/MM/yyyy")</time>
+                    </h3>
+                    <h4 class="historial-etiqueta fw-semibold">Servicios</h4>
+                    @if (turno.Servicios.Count == 0)
+                    {
+                        <p class="small">Sin servicios registrados.</p>
+                    }
+                    else
+                    {
+                        <ul class="historial-servicios list-unstyled d-grid mb-3">
+                            @foreach (var servicio in turno.Servicios)
+                            {
+                                <li class="historial-servicio @(servicio.Completado ? "" : "historial-servicio-pendiente")" @key="servicio.ServicioId">
+                                    <span class="text-break">@servicio.Descripcion</span>
+                                    <span class="small">@(servicio.Completado ? "Completado" : "Sin realizar")</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    @if (turno.Tratamientos.Count > 0)
+                    {
+                        <h4 class="historial-etiqueta fw-semibold">Tratamiento</h4>
+                        <ul class="historial-servicios list-unstyled d-grid mb-3">
+                            @foreach (var tratamiento in turno.Tratamientos)
+                            {
+                                <li class="historial-servicio">
+                                    <span class="text-break">@tratamiento.Descripcion</span>
+                                    @if (!string.IsNullOrWhiteSpace(tratamiento.Razon))
+                                    {
+                                        <button type="button" class="btn gestion-neutro historial-detalle rounded-pill fw-semibold"
+                                                aria-label="@($"Detalle de {tratamiento.Descripcion}")"
+                                                @onclick="() => AbrirDetalleAsync(tratamiento.Razon)">Detalle</button>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    <h4 class="historial-etiqueta fw-semibold">Observaciones del veterinario</h4>
+                    <p class="historial-observaciones mb-0">@(string.IsNullOrWhiteSpace(turno.Observaciones) ? "Sin observaciones." : turno.Observaciones)</p>
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+<dialog @ref="dialogo" class="gestion-dialogo" aria-labelledby="historial-motivo-titulo"
+        aria-describedby="historial-motivo">
+    <h2 id="historial-motivo-titulo" class="h5 fw-bold">Motivo del tratamiento</h2>
+    <p id="historial-motivo" class="historial-observaciones">@motivo</p>
+    <form method="dialog">
+        <button type="submit" class="btn gestion-principal rounded-pill fw-semibold">Cerrar</button>
+    </form>
+</dialog>
+
+@code {
+    [Parameter] public int PerroId { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<Turno>? turnos;
+    private string? error;
+    private string? motivo;
+    private ElementReference dialogo;
+
+    private async Task AbrirDetalleAsync(string? razon)
+    {
+        motivo = razon;
+        StateHasChanged();
+        await Js.InvokeVoidAsync("veteApp.abrirConfirmacion", dialogo);
+    }
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        error = null;
+        try
+        {
+            turnos = await Api.ListarPorMascotaAsync(PerroId, cancelacion.Token, EstadoTurno.Completado);
+        }
+        catch (GestionApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

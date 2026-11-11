@@ -13,7 +13,7 @@
         var imagen = Api.ResolverImagen(mascota.ImagenUrl);
         <div class="mascota-cabecera">
             <AvatarMascota @key="imagen" Imagen="@imagen" />
-            <h1 class="mascota-nombre fw-bold text-break mb-0">@(Opcion == "solicitar-turno" ? "Solicitar turno" : mascota.Nombre)</h1>
+            <h1 class="mascota-nombre fw-bold text-break mb-0">@TituloCabecera</h1>
         </div>
     }
     else
@@ -51,19 +51,19 @@
     {
         <CuposDisponiblesTutor @key="Id" PerroId="@Id" CupoId="@CupoId" />
     }
+    else if (Opcion == "estados")
+    {
+        <EstadosTurnosTutor @key="Id" PerroId="@Id" />
+    }
+    else if (Opcion == "historial")
+    {
+        <HistorialMascotaTutor @key="Id" PerroId="@Id" />
+    }
     else
     {
-        var titulo = Array.Find(Opciones, opcion => opcion.Ruta == Opcion).Titulo;
         <section class="gestion-tarjeta">
-            <h2 class="gestion-nombre mb-2">@(titulo ?? "Opción no encontrada")</h2>
-            @if (titulo is not null)
-            {
-                <p class="mb-0">En construcción.</p>
-            }
-            else
-            {
-                <a class="btn gestion-neutro rounded-pill" href="@($"tutor/mascotas/{Id}")">Volver al menú de la mascota</a>
-            }
+            <h2 class="gestion-nombre mb-2">Opción no encontrada</h2>
+            <a class="btn gestion-neutro rounded-pill" href="@($"tutor/mascotas/{Id}")">Volver al menú de la mascota</a>
         </section>
     }
 </FondoTutor>
@@ -82,6 +82,13 @@
 
     private readonly CancellationTokenSource cancelacion = new();
     private Perro? perro;
+    private string TituloCabecera => Opcion switch
+    {
+        "solicitar-turno" => "Solicitar turno",
+        "estados" => "Estados de turnos",
+        "historial" => $"Historial de {perro?.Nombre}",
+        _ => perro?.Nombre ?? "Mascota"
+    };
     private string? error;
     private int versionCarga;
 

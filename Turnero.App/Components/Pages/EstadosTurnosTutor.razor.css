@@ -1,0 +1,38 @@
+.estados-tutor-lista {
+    gap: clamp(1rem, 7vw, 1.8rem);
+}
+
+.estados-tutor-turno {
+    border-color: #e6aba7;
+    border-radius: 1.2rem;
+    background: #edbfba;
+    color: #301b1c;
+    box-shadow: 0 3px 9px rgb(101 39 45 / 12%);
+}
+
+.estados-tutor-turno:nth-child(even) {
+    border-color: #edc7bb;
+    background: #f4d4c9;
+}
+
+.estados-tutor-encabezado {
+    padding-bottom: .6rem;
+    border-bottom: 1px solid rgb(91 43 47 / 28%);
+}
+
+.estados-tutor-titulo {
+    font-size: clamp(1.05rem, 5vw, 1.35rem);
+}
+
+.estados-tutor-cancelar {
+    min-width: min(55%, 8rem);
+    min-height: 2.75rem;
+    box-shadow: 0 2px 6px rgb(80 26 30 / 15%);
+}
+
+@media (orientation: landscape) and (min-width: 32rem) and (max-height: 37.5rem) {
+    .estados-tutor-lista {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+}

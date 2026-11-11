@@ -1,0 +1,146 @@
+@page "/veterinario/cupos/nuevo"
+@page "/veterinario/cupos/{Id:int}/editar"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Turnero.App.Cupos
+@using System.Globalization
+@using Microsoft.JSInterop
+@inject CuposApi Api
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo mb-3">@(Id.HasValue ? "Editar cupo" : "Agregar cupo")</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger" role="alert">@error</p>
+        }
+        @if (datos is { } formulario)
+        {
+            <EditForm Model="formulario" OnValidSubmit="GuardarAsync" novalidate
+                      class="gestion-tarjeta gestion-formulario d-grid gap-3">
+                <DataAnnotationsValidator />
+                @if (Id.HasValue)
+                {
+                    <p class="mb-0"><strong>Fecha</strong> @formulario.FechaCupo?.ToString("dd/MM/yyyy")</p>
+                }
+                else
+                {
+                    <div>
+                        <label class="form-label fw-semibold" for="fecha-cupo">Fecha</label>
+                        <InputDate id="fecha-cupo" class="form-control" min="@Hoy.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"
+                                   @bind-Value="formulario.FechaCupo" />
+                        <ValidationMessage For="() => formulario.FechaCupo" />
+                    </div>
+                }
+                <div>
+                    <label class="form-label fw-semibold" for="cantidad-cupos">Cantidad de cupos</label>
+                    <InputNumber id="cantidad-cupos" class="form-control" min="0" step="1" inputmode="numeric"
+                                 placeholder="Ej. 6" @bind-Value="formulario.CuposPublicados" />
+                    <ValidationMessage For="() => formulario.CuposPublicados" />
+                </div>
+                <div class="d-flex justify-content-end flex-wrap gap-2">
+                    <button type="button" class="btn gestion-neutro rounded-pill" disabled="@guardando"
+                            @onclick="VolverAsync">Cancelar</button>
+                    <button type="submit" class="btn gestion-principal rounded-pill fw-semibold"
+                            disabled="@guardando">@(guardando ? "Guardando…" : "Guardar")</button>
+                </div>
+            </EditForm>
+        }
+        else if (error is null)
+        {
+            <p class="mb-0" role="status">Cargando cupo…</p>
+        }
+        else
+        {
+            <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private static readonly TimeZoneInfo Zona = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
+    private static DateOnly Hoy => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Zona));
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private DatosCupo? datos;
+    private string? error;
+    private bool guardando;
+    private int versionCarga;
+    private string RutaVolver => Id is int id ? $"veterinario/cupos/{id}" : "veterinario/cupos";
+
+    protected override Task OnParametersSetAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        datos = null;
+        error = null;
+        if (Id is not int id)
+        {
+            datos = new() { FechaCupo = Hoy };
+            return;
+        }
+
+        try
+        {
+            var cupo = await Api.ObtenerAsync(id, cancelacion.Token);
+            if (version == versionCarga)
+                datos = new() { FechaCupo = cupo.FechaCupo, CuposPublicados = cupo.CuposPublicados };
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (guardando || datos is not { } formulario)
+            return;
+
+        if (Id is null && formulario.FechaCupo < Hoy)
+        {
+            error = "Seleccioná una fecha a partir de hoy.";
+            return;
+        }
+
+        var version = versionCarga;
+        error = null;
+        guardando = true;
+        try
+        {
+            await Api.GuardarAsync(Id, formulario, cancelacion.Token);
+            if (version == versionCarga && !cancelacion.IsCancellationRequested)
+                await VolverAsync();
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private async Task VolverAsync()
+    {
+        if (!await Js.InvokeAsync<bool>("veteApp.volver"))
+            Navegacion.NavigateTo(RutaVolver, replace: true);
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

@@ -155,7 +155,16 @@
                     }
                     else
                     {
-                        @if (elegido == EstadoTurno.Completado)
+                        @if (elegido == EstadoTurno.Aprobado)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="cupos-requeridos">Cupos requeridos</label>
+                                <input id="cupos-requeridos" type="number" min="1" step="1" inputmode="numeric"
+                                       class="form-control" required disabled="@guardando"
+                                       @bind="cuposRequeridos" @bind:event="oninput" />
+                            </div>
+                        }
+                        else if (elegido == EstadoTurno.Completado)
                         {
                             <fieldset disabled="@guardando" class="mb-3">
                                 <legend class="h6 fw-semibold">Servicios realizados</legend>
@@ -206,6 +215,7 @@
     private string? errorCambio;
     private string? aviso;
     private string? observaciones;
+    private string? cuposRequeridos;
     private bool mostrarCambio;
     private bool guardando;
     private int versionCarga;
@@ -267,6 +277,7 @@
         errorCambio = null;
         serviciosRealizados.Clear();
         observaciones = turno?.Observaciones;
+        cuposRequeridos = turno?.CuposReservados.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private void MarcarServicio(int id, object? marcado)
@@ -282,13 +293,25 @@
         if (guardando || turno is not { } registro || destino is not { } elegido)
             return;
 
+        int? cantidad = null;
+        if (elegido == EstadoTurno.Aprobado)
+        {
+            if (!int.TryParse(cuposRequeridos, out var cupos) || cupos < 1)
+            {
+                errorCambio = "Ingresá una cantidad entera de cupos mayor o igual a 1.";
+                return;
+            }
+            cantidad = cupos;
+        }
+
         var version = versionCarga;
         guardando = true;
         errorCambio = null;
         aviso = null;
         try
         {
-            await Api.CambiarEstadoAsync(registro, elegido, serviciosRealizados.ToArray(), observaciones, cancelacion.Token);
+            await Api.CambiarEstadoAsync(registro, elegido, serviciosRealizados.ToArray(), observaciones,
+                cantidad, cancelacion.Token);
             if (version == versionCarga && !cancelacion.IsCancellationRequested)
             {
                 aviso = "El estado del turno se actualizó.";
