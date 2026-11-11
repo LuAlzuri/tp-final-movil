@@ -13,6 +13,11 @@
     box-shadow: 0 3px 8px rgb(21 62 66 / 17%);
 }
 
+.turnos-finalizar {
+    min-width: 8.5rem;
+    white-space: nowrap;
+}
+
 .turnos-tarjeta .turnos-titulo {
     font-size: clamp(1.05rem, 5vw, 1.3rem);
 }

@@ -64,6 +64,7 @@
                     <InputCheckbox class="form-check-input mt-0" @bind-Value="formulario.CalVacCom" />
                     Vacunación completa
                 </label>
+                <PatologiasFormularioPerro Patologias="@patologias" Deshabilitado="@guardando" />
                 <div class="gestion-formulario-acciones">
                     <label class="form-label fw-semibold" for="perro-imagen">Foto de la mascota (opcional)</label>
                     @if (imagenActual is not null)
@@ -114,6 +115,8 @@
     private readonly CancellationTokenSource cancelacion = new();
     private List<EntradaCatalogo> grupos = [];
     private List<EntradaCatalogo> tamanios = [];
+    private List<PatologiaPerro> patologiasOriginales = [];
+    private List<PatologiaPerro> patologias = [];
     private DatosPerro? datos;
     private string? error;
     private string? errorImagen;
@@ -155,6 +158,8 @@
             grupos = await grupoTask;
             tamanios = await tamanioTask;
             imagenActual = Api.ResolverImagen(perro?.ImagenUrl);
+            patologiasOriginales = perro?.Patologias ?? [];
+            patologias = [.. patologiasOriginales];
             datos = perro is null ? new DatosPerro() : new DatosPerro
             {
                 Nombre = perro.Nombre,
@@ -233,7 +238,7 @@
         var version = versionCarga;
         error = null;
         guardando = true;
-        var datosGuardados = false;
+        string? pendiente = null;
         try
         {
             var ct = cancelacion.Token;
@@ -242,7 +247,12 @@
                 return;
 
             perroGuardadoId = id;
-            datosGuardados = true;
+            pendiente = "guardar las patologías";
+            await Api.GuardarPatologiasAsync(id, patologiasOriginales, patologias.ToArray(), ct);
+            if (version != versionCarga || ct.IsCancellationRequested)
+                return;
+
+            pendiente = "subir la foto";
             if (imagenSeleccionada is { } imagen)
                 await Api.SubirImagenAsync(id, imagen.Contenido, imagen.Nombre, imagen.Tipo, ct);
 
@@ -252,7 +262,7 @@
         catch (GestionApiException ex)
         {
             if (version == versionCarga)
-                error = datosGuardados ? $"Los datos se guardaron, pero no se pudo subir la foto. {ex.Message}" : ex.Message;
+                error = pendiente is null ? ex.Message : $"Los datos se guardaron, pero no se pudo {pendiente}. {ex.Message}";
         }
         catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
         finally

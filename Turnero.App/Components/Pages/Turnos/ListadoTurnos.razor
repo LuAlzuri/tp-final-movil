@@ -1,4 +1,5 @@
-@page "/veterinario/turnos"
+@page "/veterinario/turnos/solicitudes"
+@page "/veterinario/turnos/completar"
 @attribute [Authorize(Roles = Roles.Veterinario)]
 @layout InicioLayout
 @using Turnero.App.Turnos
@@ -7,7 +8,7 @@
 @implements IDisposable
 
 <section class="gestion-pantalla" aria-labelledby="titulo-turnos">
-    <h1 id="titulo-turnos" class="visually-hidden">Turnos</h1>
+    <h1 id="titulo-turnos" class="@(soloAprobados ? "gestion-titulo gestion-titulo-listado mb-3" : "visually-hidden")">@(soloAprobados ? "Completar turno" : "Gestionar solicitudes")</h1>
 
     @if (cargando)
     {
@@ -20,7 +21,8 @@
     }
     else if (turnos.Count == 0)
     {
-        <p class="gestion-panel mb-0" role="status">@(paginaActual == 1 ? "Todavía no hay turnos para mostrar." : "No hay más turnos.")</p>
+        <p class="gestion-panel mb-0" role="status">@(paginaActual > 1 ? "No hay más turnos." :
+            soloAprobados ? "No hay turnos aprobados para completar." : "Todavía no hay turnos para mostrar.")</p>
     }
     else
     {
@@ -33,10 +35,14 @@
                         <EtiquetaEstadoTurno Estado="@turno.EstadoId" Descripcion="@turno.EstadoDescripcion" />
                     </div>
                     <p class="turnos-perro mb-0"><strong>Paciente:</strong> <span>@turno.PerroNombre</span></p>
+                    @if (soloAprobados)
+                    {
+                        <p class="mb-0 small">Fecha del turno: @turno.FechaCupo.ToString("dd/MM/yyyy")</p>
+                    }
                     <div class="d-flex justify-content-end">
-                        <a href="@($"veterinario/turnos/{turno.Id}")"
-                           class="btn gestion-neutro gestion-accion turnos-ver rounded-pill fw-semibold"
-                           aria-label="@($"Ver turno #{turno.Id}")">Ver</a>
+                        <a href="@(soloAprobados ? $"veterinario/turnos/completar/{turno.Id}" : $"veterinario/turnos/{turno.Id}")"
+                           class="btn gestion-accion turnos-ver rounded-pill fw-semibold @(soloAprobados ? "gestion-principal turnos-finalizar" : "gestion-neutro")"
+                           aria-label="@($"{(soloAprobados ? "Finalizar" : "Ver")} turno #{turno.Id}")">@(soloAprobados ? "Finalizar turno" : "Ver")</a>
                     </div>
                 </li>
             }
@@ -63,6 +69,7 @@
     private int paginaActual = 1;
     private int versionCarga;
     private bool cargando;
+    private bool soloAprobados;
     private string? error;
 
     private bool PuedeAvanzar => !cargando && error is null &&
@@ -70,6 +77,8 @@
 
     protected override Task OnParametersSetAsync()
     {
+        soloAprobados = Navegacion.ToBaseRelativePath(Navegacion.Uri)
+            .StartsWith("veterinario/turnos/completar", StringComparison.OrdinalIgnoreCase);
         paginaActual = Math.Clamp(Pagina ?? 1, 1, TurnosApi.MaximaPagina);
         return CargarAsync();
     }
@@ -90,7 +99,8 @@
         error = null;
         try
         {
-            var registros = await Api.ListarAsync(paginaActual, cancelacion.Token);
+            var registros = await Api.ListarAsync(paginaActual, cancelacion.Token,
+                soloAprobados ? EstadoTurno.Aprobado : null);
             if (version == versionCarga)
                 turnos = registros;
         }

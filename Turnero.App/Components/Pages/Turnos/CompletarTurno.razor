@@ -1,0 +1,266 @@
+@page "/veterinario/turnos/completar/{Id:int}"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Microsoft.JSInterop
+@using Turnero.App.Catalogos
+@using Turnero.App.Turnos
+@inject TurnosApi Api
+@inject CatalogosApi Catalogos
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="gestion-pantalla">
+    <div class="gestion-panel">
+        <h1 class="gestion-titulo gestion-titulo-listado mb-3">Completar turno #@Id</h1>
+        @if (error is not null)
+        {
+            <p class="alert alert-danger" role="alert">@error</p>
+        }
+        @if (cargando)
+        {
+            <p class="mb-0" role="status">Cargando turno…</p>
+        }
+        else if (turno is not { } registro)
+        {
+            <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+        }
+        else if (registro.EstadoId != EstadoTurno.Aprobado)
+        {
+            <p class="alert alert-warning" role="status">Solo se pueden completar turnos aprobados.</p>
+            <a href="veterinario/turnos/completar" class="btn gestion-neutro rounded-pill">Volver a turnos aprobados</a>
+        }
+        else
+        {
+            <form class="gestion-tarjeta" @onsubmit="GuardarAsync" @onsubmit:preventDefault>
+                <p class="mb-1 text-break"><strong>Paciente:</strong> @registro.PerroNombre</p>
+                <p class="small mb-3"><strong>Fecha:</strong> @registro.FechaCupo.ToString("dd/MM/yyyy")</p>
+                <fieldset disabled="@guardando">
+                    <legend class="h6 fw-bold">Servicios realizados</legend>
+                    @if (registro.Servicios.Count == 0)
+                    {
+                        <p class="small">Este turno no tiene servicios registrados.</p>
+                    }
+                    else
+                    {
+                        <div class="d-grid gap-2 mb-3">
+                            @foreach (var servicio in registro.Servicios)
+                            {
+                                var marcado = realizados.Contains(servicio.ServicioId);
+                                <label class="completar-servicio d-flex align-items-center gap-2 @(marcado ? "completar-servicio-marcado" : "")"
+                                       @key="servicio.ServicioId">
+                                    <input type="checkbox" class="form-check-input mt-0 flex-shrink-0"
+                                           checked="@marcado" @onchange="args => MarcarServicio(servicio.ServicioId, args.Value)" />
+                                    <span class="text-break">@servicio.Descripcion</span>
+                                </label>
+                            }
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <h2 class="h6 fw-bold mb-0">Tratamiento/s</h2>
+                            <button type="button" class="btn gestion-neutro rounded-pill fw-semibold"
+                                    @onclick="AbrirTratamientosAsync">Gestionar</button>
+                        </div>
+                        @if (aplicados.Count == 0)
+                        {
+                            <p class="small mt-2 mb-0">Sin tratamientos agregados.</p>
+                        }
+                        else
+                        {
+                            <table class="table table-bordered align-middle mt-2 mb-0" aria-label="Tratamientos agregados">
+                                <tbody>
+                                    @foreach (var tratamiento in aplicados)
+                                    {
+                                        <tr @key="tratamiento.TratamientoId">
+                                            <td class="text-break">@NombreTratamiento(tratamiento.TratamientoId)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                    <label for="observaciones-completar" class="form-label fw-semibold">Observaciones para el próximo turno</label>
+                    <textarea id="observaciones-completar" class="form-control" maxlength="1000" rows="3"
+                              @bind="observaciones"></textarea>
+                </fieldset>
+                <div class="d-flex flex-wrap justify-content-end gap-2 mt-3">
+                    <a href="veterinario/turnos/completar" class="btn gestion-neutro rounded-pill fw-semibold">Volver</a>
+                    <button type="submit" class="btn gestion-principal rounded-pill fw-semibold" disabled="@guardando">
+                        @(guardando ? "Finalizando…" : "Finalizar turno")
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+</section>
+
+<dialog @ref="dialogoTratamientos" class="gestion-dialogo text-start" aria-labelledby="gestionar-tratamientos">
+    <h2 id="gestionar-tratamientos" class="h5 fw-bold mb-3">Gestionar tratamientos</h2>
+    @if (aplicados.Count > 0)
+    {
+        <ul class="list-unstyled d-grid gap-2 mb-3">
+            @foreach (var tratamiento in aplicados)
+            {
+                <li class="completar-servicio completar-servicio-marcado d-flex align-items-center justify-content-between flex-wrap gap-2"
+                    @key="tratamiento.TratamientoId">
+                    <span class="text-break">@NombreTratamiento(tratamiento.TratamientoId)</span>
+                    <button type="button" class="btn gestion-neutro rounded-pill"
+                            aria-label="@($"Quitar {NombreTratamiento(tratamiento.TratamientoId)}")"
+                            @onclick="() => aplicados.Remove(tratamiento)">Quitar</button>
+                </li>
+            }
+        </ul>
+    }
+    @if (tratamientos.Count == 0)
+    {
+        <p class="small">El catálogo de tratamientos está vacío.</p>
+    }
+    else
+    {
+        <label for="tratamiento-completar" class="form-label fw-semibold">Tratamiento del catálogo</label>
+        <select id="tratamiento-completar" class="form-select" @bind="tratamientoId" @bind:after="LimpiarMotivo">
+            <option value="0">Seleccioná un tratamiento</option>
+            @foreach (var tratamiento in tratamientos)
+            {
+                <option value="@tratamiento.Id" disabled="@aplicados.Any(item => item.TratamientoId == tratamiento.Id)">@tratamiento.Descripcion</option>
+            }
+        </select>
+        @if (tratamientoId > 0)
+        {
+            <label for="motivo-tratamiento" class="form-label fw-semibold mt-2">Motivo del tratamiento (opcional)</label>
+            <textarea id="motivo-tratamiento" class="form-control" maxlength="500" rows="2"
+                      @bind="motivoTratamiento"></textarea>
+        }
+    }
+    <div class="d-flex justify-content-end flex-wrap gap-2 mt-3">
+        <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CerrarTratamientosAsync">Cerrar</button>
+        <button type="button" class="btn gestion-principal rounded-pill fw-semibold"
+                disabled="@(tratamientoId == 0)" @onclick="AgregarTratamiento">Agregar</button>
+    </div>
+</dialog>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private readonly HashSet<int> realizados = [];
+    private readonly List<TratamientoAplicado> aplicados = [];
+    private List<EntradaCatalogo> tratamientos = [];
+    private ElementReference dialogoTratamientos;
+    private int tratamientoId;
+    private string? motivoTratamiento;
+    private Turno? turno;
+    private string? observaciones;
+    private string? error;
+    private bool cargando;
+    private bool guardando;
+    private int versionCarga;
+
+    protected override Task OnParametersSetAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        turno = null;
+        error = null;
+        cargando = true;
+        realizados.Clear();
+        aplicados.Clear();
+        observaciones = null;
+        tratamientoId = 0;
+        LimpiarMotivo();
+        try
+        {
+            var ct = cancelacion.Token;
+            var registro = await Api.ObtenerAsync(Id, ct);
+            var catalogo = registro.EstadoId == EstadoTurno.Aprobado
+                ? await Catalogos.ListarAsync(DefinicionesCatalogo.Buscar("tratamientos")!, ct)
+                : [];
+            if (version != versionCarga)
+                return;
+
+            turno = registro;
+            tratamientos = catalogo;
+            observaciones = registro.Observaciones;
+            realizados.UnionWith(registro.Servicios.Where(servicio => servicio.Completado).Select(servicio => servicio.ServicioId));
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            if (version == versionCarga)
+                cargando = false;
+        }
+    }
+
+    private void LimpiarMotivo() => motivoTratamiento = null;
+
+    private string NombreTratamiento(int id) => tratamientos.First(tratamiento => tratamiento.Id == id).Descripcion;
+
+    private async Task AbrirTratamientosAsync()
+    {
+        tratamientoId = 0;
+        LimpiarMotivo();
+        await Js.InvokeVoidAsync("veteApp.abrirConfirmacion", dialogoTratamientos);
+    }
+
+    private async Task CerrarTratamientosAsync() =>
+        await Js.InvokeVoidAsync("veteApp.cerrarConfirmacion", dialogoTratamientos);
+
+    private void AgregarTratamiento()
+    {
+        if (!tratamientos.Any(tratamiento => tratamiento.Id == tratamientoId) ||
+            aplicados.Any(tratamiento => tratamiento.TratamientoId == tratamientoId))
+            return;
+
+        aplicados.Add(new(tratamientoId, motivoTratamiento));
+        tratamientoId = 0;
+        LimpiarMotivo();
+    }
+
+    private void MarcarServicio(int id, object? marcado)
+    {
+        if (marcado is true)
+            realizados.Add(id);
+        else
+            realizados.Remove(id);
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (guardando || turno is not { EstadoId: EstadoTurno.Aprobado } registro)
+            return;
+
+        var version = versionCarga;
+        var ct = cancelacion.Token;
+        guardando = true;
+        error = null;
+        try
+        {
+            await Api.CompletarAsync(registro.Id, realizados.ToArray(), aplicados.ToArray(), observaciones, ct);
+            if (version == versionCarga && !ct.IsCancellationRequested)
+                Navegacion.NavigateTo("veterinario/turnos/completar", replace: true);
+        }
+        catch (GestionApiException ex)
+        {
+            if (version == versionCarga)
+                error = ex.Message;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

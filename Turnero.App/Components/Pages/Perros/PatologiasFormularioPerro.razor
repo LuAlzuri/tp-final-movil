@@ -1,0 +1,239 @@
+@using Microsoft.JSInterop
+@using Turnero.App.Catalogos
+@using Turnero.App.Perros
+@inject CatalogosApi Api
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="gestion-formulario-acciones" aria-labelledby="perro-patologias">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <h2 id="perro-patologias" class="h6 fw-bold mb-0">Patologías</h2>
+        <button type="button" class="btn gestion-neutro rounded-pill fw-semibold" disabled="@Deshabilitado"
+                @onclick="AbrirGestionAsync">Gestionar</button>
+    </div>
+    @if (Patologias.Count == 0)
+    {
+        <p class="small mb-0">Sin patologías agregadas.</p>
+    }
+    else
+    {
+        <table class="table table-bordered align-middle mb-0" aria-labelledby="perro-patologias">
+            <thead class="table-light">
+                <tr><th scope="col">Patología</th><th scope="col" class="text-center">Tratado</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var patologia in Patologias)
+                {
+                    <tr @key="patologia.PatologiaId">
+                        <td>
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <span class="text-break">@patologia.Descripcion</span>
+                                @if (!string.IsNullOrWhiteSpace(patologia.Observacion))
+                                {
+                                    <button type="button" class="btn patologia-observaciones flex-shrink-0"
+                                            aria-label="@($"Ver observaciones de {patologia.Descripcion}")"
+                                            @onclick="() => VerObservacionAsync(patologia)">ⓘ</button>
+                                }
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span aria-hidden="true">@(patologia.Controlado ? "✓" : "—")</span>
+                            <span class="visually-hidden">@(patologia.Controlado ? "Sí" : "No")</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<dialog @ref="gestion" class="gestion-dialogo text-start" aria-labelledby="gestionar-patologias">
+    <h2 id="gestionar-patologias" class="h5 fw-bold">Gestionar patologías</h2>
+    @if (Patologias.Count > 0)
+    {
+        <ul class="list-unstyled mb-3">
+            @foreach (var patologia in Patologias)
+            {
+                <li class="border-bottom py-2" @key="patologia.PatologiaId">
+                    <p class="fw-semibold text-break mb-1">@patologia.Descripcion</p>
+                    <div class="d-flex justify-content-end flex-wrap gap-2">
+                        <button type="button" class="btn gestion-neutro rounded-pill"
+                                aria-label="@($"Editar {patologia.Descripcion}")" @onclick="() => Editar(patologia)">Editar</button>
+                        <button type="button" class="btn gestion-neutro rounded-pill"
+                                aria-label="@($"Quitar {patologia.Descripcion}")" @onclick="() => Quitar(patologia)">Quitar</button>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (cargando)
+    {
+        <p class="small" role="status">Cargando catálogo…</p>
+    }
+    else if (error is not null)
+    {
+        <p class="alert alert-danger" role="alert">@error</p>
+        <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarCatalogoAsync">Reintentar</button>
+    }
+    else if (catalogo is { Count: 0 })
+    {
+        <p class="small">El catálogo de patologías está vacío.</p>
+    }
+
+    @if (editando is not null)
+    {
+        <p class="fw-semibold text-break mb-2">@editando.Descripcion</p>
+    }
+    else if (catalogo is { Count: > 0 })
+    {
+        <label for="seleccionar-patologia" class="form-label fw-semibold">Patología del catálogo</label>
+        <select id="seleccionar-patologia" class="form-select" @bind="seleccionada" @bind:after="LimpiarDatos">
+            <option value="0">Seleccioná una patología</option>
+            @foreach (var entrada in catalogo)
+            {
+                <option value="@entrada.Id" disabled="@Patologias.Any(patologia => patologia.PatologiaId == entrada.Id)">@entrada.Descripcion</option>
+            }
+        </select>
+    }
+
+    @if (editando is not null || seleccionada > 0)
+    {
+        <label class="d-flex align-items-center gap-2 mt-3 mb-2">
+            <input type="checkbox" class="form-check-input mt-0" @bind="controlado" />
+            Tratado
+        </label>
+        <label for="observacion-patologia" class="form-label fw-semibold">Observaciones (opcional)</label>
+        <textarea id="observacion-patologia" class="form-control" maxlength="1000" rows="2" @bind="observacion"></textarea>
+    }
+
+    <div class="d-flex justify-content-end flex-wrap gap-2 mt-3">
+        <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CerrarGestionAsync">Cerrar</button>
+        @if (editando is not null || catalogo is { Count: > 0 })
+        {
+            <button type="button" class="btn gestion-principal rounded-pill fw-semibold"
+                    disabled="@(editando is null && seleccionada == 0)" @onclick="GuardarSeleccion">
+                @(editando is null ? "Agregar" : "Aplicar cambios")
+            </button>
+        }
+    </div>
+</dialog>
+
+<dialog @ref="detalle" class="gestion-dialogo" aria-labelledby="detalle-observacion-patologia">
+    <h2 id="detalle-observacion-patologia" class="h5 fw-bold">Observaciones de la patología</h2>
+    <p class="fw-semibold text-break">@observada?.Descripcion</p>
+    <p class="text-break">@observada?.Observacion</p>
+    <button type="button" class="btn gestion-principal rounded-pill" @onclick="CerrarDetalleAsync">Cerrar</button>
+</dialog>
+
+@code {
+    [Parameter, EditorRequired] public List<PatologiaPerro> Patologias { get; set; } = default!;
+    [Parameter] public bool Deshabilitado { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private ElementReference gestion;
+    private ElementReference detalle;
+    private List<EntradaCatalogo>? catalogo;
+    private PatologiaPerro? editando;
+    private PatologiaPerro? observada;
+    private int seleccionada;
+    private bool controlado;
+    private string? observacion;
+    private string? error;
+    private bool cargando;
+
+    private async Task AbrirGestionAsync()
+    {
+        LimpiarSeleccion();
+        await Js.InvokeVoidAsync("veteApp.abrirConfirmacion", gestion);
+        if (catalogo is null)
+            await CargarCatalogoAsync();
+    }
+
+    private async Task CerrarGestionAsync() =>
+        await Js.InvokeVoidAsync("veteApp.cerrarConfirmacion", gestion);
+
+    private async Task CargarCatalogoAsync()
+    {
+        if (cargando)
+            return;
+
+        cargando = true;
+        error = null;
+        try
+        {
+            catalogo = await Api.ListarAsync(DefinicionesCatalogo.Buscar("patologias")!, cancelacion.Token);
+        }
+        catch (GestionApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void Editar(PatologiaPerro patologia)
+    {
+        editando = patologia;
+        seleccionada = 0;
+        controlado = patologia.Controlado;
+        observacion = patologia.Observacion;
+    }
+
+    private void Quitar(PatologiaPerro patologia)
+    {
+        Patologias.Remove(patologia);
+        if (editando == patologia)
+            LimpiarSeleccion();
+    }
+
+    private void GuardarSeleccion()
+    {
+        var nota = string.IsNullOrWhiteSpace(observacion) ? null : observacion.Trim();
+        if (editando is { } actual)
+        {
+            Patologias[Patologias.IndexOf(actual)] = actual with { Controlado = controlado, Observacion = nota };
+        }
+        else if (catalogo?.Find(entrada => entrada.Id == seleccionada) is { } entrada &&
+                 Patologias.All(patologia => patologia.PatologiaId != entrada.Id))
+        {
+            Patologias.Add(new(entrada.Descripcion, controlado, nota, entrada.Id));
+        }
+        LimpiarSeleccion();
+    }
+
+    private void LimpiarSeleccion()
+    {
+        editando = null;
+        seleccionada = 0;
+        LimpiarDatos();
+    }
+
+    private void LimpiarDatos()
+    {
+        controlado = false;
+        observacion = null;
+    }
+
+    private async Task VerObservacionAsync(PatologiaPerro patologia)
+    {
+        if (string.IsNullOrWhiteSpace(patologia.Observacion))
+            return;
+
+        observada = patologia;
+        StateHasChanged();
+        await Js.InvokeVoidAsync("veteApp.abrirConfirmacion", detalle);
+    }
+
+    private async Task CerrarDetalleAsync() =>
+        await Js.InvokeVoidAsync("veteApp.cerrarConfirmacion", detalle);
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}
