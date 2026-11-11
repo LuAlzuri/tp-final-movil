@@ -1,0 +1,95 @@
+.solicitud-formulario {
+    padding: clamp(1rem, 5vw, 1.5rem);
+    background: #e59498;
+    border-color: #da848a;
+    border-radius: 1.2rem;
+    color: #241416;
+    box-shadow: 0 4px 12px rgb(101 39 45 / 16%);
+}
+
+.solicitud-resumen {
+    padding-bottom: .7rem;
+    border-bottom: 1px solid rgb(91 43 47 / 28%);
+    font-size: .95rem;
+}
+
+.solicitud-leyenda {
+    font-size: 1rem;
+}
+
+.solicitud-servicios {
+    padding: .55rem;
+    border: 1px solid rgb(255 255 255 / 35%);
+    border-radius: 1.15rem;
+    background: rgb(255 255 255 / 23%);
+}
+
+.solicitud-servicios-lista {
+    max-height: 15.75rem;
+    overflow-y: auto;
+    gap: .5rem;
+    border-radius: .85rem;
+    scrollbar-width: thin;
+    scrollbar-color: #c87d83 transparent;
+}
+
+.solicitud-servicio {
+    min-height: 2.75rem;
+    padding: .6rem .85rem;
+    border: 1px solid #efdcda;
+    border-radius: .85rem;
+    background: #fffaf9;
+    color: #35292a;
+    font-size: .95rem;
+    line-height: 1.35;
+    box-shadow: 0 2px 5px rgb(101 39 45 / 6%);
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s;
+}
+
+.solicitud-servicio-elegido {
+    border-color: #78bdb8;
+    background: #e3f3f0;
+    color: #153e42;
+}
+
+.solicitud-servicio:focus-within {
+    outline: 2px solid #248c8d;
+    outline-offset: 1px;
+}
+
+.solicitud-servicio .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 1.5px solid #bfaeae;
+    border-radius: 50%;
+    accent-color: #248c8d;
+}
+
+.solicitud-servicio .form-check-input:checked {
+    background-color: #248c8d;
+    border-color: #248c8d;
+}
+
+.solicitud-exito {
+    background: #d5f0df;
+    border-color: #63b886;
+    color: #153e2a;
+}
+
+.solicitud-exito-icono {
+    display: grid;
+    width: 3.25rem;
+    height: 3.25rem;
+    place-items: center;
+    border-radius: 50%;
+    background: #fff;
+    color: #207745;
+    font-size: 2rem;
+    box-shadow: 0 2px 7px rgb(32 119 69 / 15%);
+}
+
+.solicitud-exito .btn {
+    min-width: 7rem;
+    min-height: 2.75rem;
+}

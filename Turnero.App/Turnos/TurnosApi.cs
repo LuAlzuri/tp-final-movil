@@ -39,6 +39,12 @@ internal sealed class TurnosApi(ApiGestion api)
         return await ApiGestion.LeerAsync<Turno>(respuesta, ct);
     }
 
+    public async Task SolicitarAsync(int perroId, int cupoId, IReadOnlyCollection<int> servicioIds, CancellationToken ct)
+    {
+        using var contenido = JsonContent.Create(new { PerroId = perroId, CupoId = cupoId, ServicioIds = servicioIds });
+        using var respuesta = await api.EnviarAsync(HttpMethod.Post, Ruta, ct, contenido, recurso: "turnos");
+    }
+
     public async Task CambiarEstadoAsync(Turno turno, EstadoTurno destino,
         IReadOnlyCollection<int> serviciosCompletados, string? observaciones, CancellationToken ct)
     {

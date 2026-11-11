@@ -1,0 +1,178 @@
+@using Microsoft.JSInterop
+@using Turnero.App.Catalogos
+@using Turnero.App.Cupos
+@using Turnero.App.Turnos
+@inject CuposApi Cupos
+@inject CatalogosApi Catalogos
+@inject TurnosApi Turnos
+@inject NavigationManager Navegacion
+@inject IJSRuntime Js
+@implements IDisposable
+
+<section class="solicitud-formulario gestion-tarjeta">
+    <h2 class="gestion-nombre">Solicitar turno</h2>
+    @if (errorCarga is not null)
+    {
+        <p class="alert alert-danger" role="alert">@errorCarga</p>
+        <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+    }
+    else if (cupo is not { } dia || servicios is null)
+    {
+        <p class="mb-0" role="status">Cargando servicios…</p>
+    }
+    else
+    {
+        <p class="solicitud-resumen mb-3">
+            <strong class="text-capitalize">@dia.Dia</strong> · @dia.FechaCupo.ToString("dd/MM/yyyy")
+        </p>
+        @if (dia.CuposDisponibles <= 0)
+        {
+            <p class="alert alert-warning" role="alert">Ya no hay cupos disponibles para este día.</p>
+        }
+        @if (error is not null)
+        {
+            <p class="alert alert-danger" role="alert">@error</p>
+        }
+        <form @onsubmit="ConfirmarAsync" @onsubmit:preventDefault>
+            <fieldset disabled="@(guardando || registrado || dia.CuposDisponibles <= 0)">
+                <legend class="solicitud-leyenda fw-semibold">Elegí los servicios a realizar</legend>
+                <p id="limite-servicios" class="small mb-2">Podés elegir hasta 10 servicios.</p>
+                @if (servicios.Count == 0)
+                {
+                    <p class="gestion-tarjeta mb-3" role="status">Por ahora no hay servicios disponibles.</p>
+                }
+                else
+                {
+                    <div class="solicitud-servicios mb-3" aria-describedby="limite-servicios">
+                        <div class="solicitud-servicios-lista d-grid">
+                            @foreach (var servicio in servicios)
+                            {
+                                <label class="solicitud-servicio d-flex align-items-center gap-3 @(seleccionados.Contains(servicio.Id) ? "solicitud-servicio-elegido" : "")" @key="servicio.Id">
+                                    <input class="form-check-input flex-shrink-0 mt-0" type="checkbox"
+                                           checked="@seleccionados.Contains(servicio.Id)"
+                                           disabled="@(seleccionados.Count >= MaximoServicios && !seleccionados.Contains(servicio.Id))"
+                                           @onchange="args => MarcarServicio(servicio.Id, args.Value)" />
+                                    <span class="text-break">@servicio.Descripcion</span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+            </fieldset>
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <button type="button" class="btn btn-danger gestion-eliminar rounded-pill fw-semibold"
+                        disabled="@(guardando || registrado)" @onclick="Cancelar">Cancelar</button>
+                <button type="submit" class="btn gestion-principal rounded-pill fw-semibold"
+                        disabled="@(guardando || registrado || servicios.Count == 0 || dia.CuposDisponibles <= 0)">
+                    @(guardando ? "Confirmando…" : "Confirmar")
+                </button>
+            </div>
+        </form>
+    }
+</section>
+
+<dialog @ref="dialogo" class="gestion-dialogo solicitud-exito" aria-labelledby="solicitud-exito-titulo" @onclose="VolverAlMenu">
+    <div class="solicitud-exito-icono mx-auto mb-3" aria-hidden="true">✓</div>
+    <h2 id="solicitud-exito-titulo" class="h5 fw-bold">¡Tu solicitud se registró exitosamente!</h2>
+    <p class="mb-3">Queda pendiente de aprobación del veterinario.</p>
+    <button type="button" class="btn gestion-neutro rounded-pill fw-semibold" @onclick="CerrarExitoAsync">Cerrar</button>
+</dialog>
+
+@code {
+    [Parameter] public int PerroId { get; set; }
+    [Parameter] public int CupoId { get; set; }
+
+    private const int MaximoServicios = 10;
+    private readonly CancellationTokenSource cancelacion = new();
+    private readonly HashSet<int> seleccionados = [];
+    private List<EntradaCatalogo>? servicios;
+    private CupoDiario? cupo;
+    private string? errorCarga;
+    private string? error;
+    private bool guardando;
+    private bool registrado;
+    private bool avisoAbierto;
+    private ElementReference dialogo;
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (registrado && !avisoAbierto)
+        {
+            avisoAbierto = true;
+            await Js.InvokeVoidAsync("veteApp.abrirConfirmacion", dialogo);
+        }
+    }
+
+    private async Task CargarAsync()
+    {
+        errorCarga = null;
+        try
+        {
+            var ct = cancelacion.Token;
+            var dia = Cupos.ObtenerAsync(CupoId, ct);
+            var opciones = Catalogos.ListarAsync(DefinicionesCatalogo.Buscar("servicios")!, ct);
+            await Task.WhenAll(dia, opciones);
+            cupo = await dia;
+            servicios = await opciones;
+            seleccionados.IntersectWith(servicios.Select(servicio => servicio.Id));
+        }
+        catch (GestionApiException ex)
+        {
+            errorCarga = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    private void MarcarServicio(int id, object? marcado)
+    {
+        error = null;
+        if (marcado is true && seleccionados.Count < MaximoServicios)
+            seleccionados.Add(id);
+        else if (marcado is false)
+            seleccionados.Remove(id);
+    }
+
+    private async Task ConfirmarAsync()
+    {
+        if (guardando || registrado || cupo is not { CuposDisponibles: > 0 } || servicios is null)
+            return;
+
+        if (seleccionados.Count is < 1 or > MaximoServicios)
+        {
+            error = "Elegí entre 1 y 10 servicios.";
+            return;
+        }
+
+        guardando = true;
+        error = null;
+        try
+        {
+            await Turnos.SolicitarAsync(PerroId, CupoId, seleccionados.ToArray(), cancelacion.Token);
+            registrado = true;
+        }
+        catch (GestionApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void Cancelar() =>
+        Navegacion.NavigateTo(Navegacion.GetUriWithQueryParameter("cupo", (int?)null), replace: true);
+
+    private async Task CerrarExitoAsync() => await Js.InvokeVoidAsync("veteApp.cerrarConfirmacion", dialogo);
+
+    private void VolverAlMenu() => Navegacion.NavigateTo($"tutor/mascotas/{PerroId}", replace: true);
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}

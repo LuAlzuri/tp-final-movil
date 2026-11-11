@@ -63,7 +63,8 @@ public sealed class ApiGestion(SesionService sesion)
                     _ => "La API no pudo completar la operación."
                 };
 
-                if (respuesta.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Conflict)
+                if (respuesta.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Conflict
+                    || (respuesta.StatusCode == HttpStatusCode.Forbidden && recurso == "turnos"))
                 {
                     try
                     {
