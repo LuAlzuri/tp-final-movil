@@ -1,4 +1,4 @@
-# API del turnero de peluquería canina
+# Turnero de peluquería canina
 
 API REST para gestionar tutores, perros, cupos, turnos, vetos, auditoría y reportes. Usa ASP.NET Core sobre `net10.0`, EF Core 10.0.14 y SQL Server.
 
@@ -40,6 +40,14 @@ La ficha del perro devuelve `imagenUrl` como una ruta relativa o `null`. La app 
 
 Las imágenes se guardan en `wwwroot/uploads`. El despliegue requiere almacenamiento persistente en esa ruta, compartido si la API corre en varias instancias.
 
+## Aplicación Android
+
+`Turnero.App` es la aplicación móvil desarrollada con .NET MAUI Blazor Hybrid. Para probarla en Visual Studio, instalá la carga de trabajo de .NET MAUI y el SDK de Android. Seleccioná `Turnero.App` como proyecto de inicio y ejecutalo en un emulador o dispositivo Android.
+
+La app consume la API publicada en MonsterASP. La URL base se configura en [MauiProgram.cs](Turnero.App/MauiProgram.cs). Para probar contra una API local, usá una URL que sea accesible desde el emulador o dispositivo.
+
+Las grillas de informes consultan las rutas `/api/reportes/{tipo}/datos`. En producción requieren que esté desplegada una versión de la API que incluya esas rutas. La actualización de informes no requiere migraciones de base de datos.
+
 ## Verificación
 
 ```powershell
@@ -54,3 +62,38 @@ La verificación de API usa SQLite en memoria por defecto. Para probar las migra
 $env:TURNERO_SQLSERVER_PRUEBAS = 'Server=(localdb)\MSSQLLocalDB;Integrated Security=True;Encrypt=True;TrustServerCertificate=True'
 dotnet run --project tests/VerificacionAutenticacion -- --sqlserver
 ```
+
+La documentación sigue en proceso de finalización.
+
+[Documentación del proyecto y diagramas de casos de uso](docs/Alzuri_Documentacion_proyectoFinal_completado.docx)
+
+## Hitos a cumplir desde el front:
+
+| Rol | Caso de uso | Pantalla o acción en la app | Estado |
+| --- | --- | --- | --- |
+| Todos | Iniciar y cerrar sesión. | Inicio de sesión y menú del rol | Realizado |
+| Todos | Consultar el perfil propio. | Falta la pantalla de perfil | Pendiente |
+| Todos | Cambiar la contraseña propia. | Falta el formulario de cambio de contraseña | Pendiente |
+| Tutor | Consultar sus perros. | Inicio del tutor y menú de cada mascota | Realizado |
+| Tutor | Consultar cupos y servicios. | Solicitar turno | Realizado |
+| Tutor | Solicitar un turno con uno a diez servicios. | Solicitar turno → Confirmar | Realizado |
+| Tutor | Modificar los servicios de un turno pendiente. | Falta la acción en Estados de turnos | Pendiente |
+| Tutor | Cancelar un turno pendiente o aprobado. | Estados de turnos → Cancelar | Realizado |
+| Tutor | Consultar el estado y el historial de sus turnos. | Estados de turnos y Consultar historial | Realizado |
+| Veterinario | Gestionar tutores y teléfonos. | Listado de tutores → Detalle | Realizado |
+| Veterinario | Gestionar perros y agregar o reemplazar sus fotos. | Detalle del tutor → Sus perros → Gestionar | Realizado |
+| Veterinario | Quitar la foto de un perro. | Falta la acción en Editar perro | Pendiente |
+| Veterinario | Consultar la ficha del perro y sus patologías. | Detalle del perro | Realizado |
+| Veterinario | Asignar, editar y quitar patologías de un perro. | Faltan las acciones en Detalle del perro | Pendiente |
+| Veterinario | Gestionar cupos diarios y consultar los turnos aprobados de cada fecha. | Cupos | Realizado |
+| Veterinario | Gestionar los catálogos de servicios, tratamientos y patologías. | Falta el acceso para el rol Veterinario | Pendiente |
+| Veterinario | Consultar, aprobar, rechazar y cancelar turnos según su estado. | Turnos → Detalle del turno | Realizado |
+| Veterinario | Completar la atención y registrar los servicios realizados y las observaciones. | Detalle del turno → Completar | Realizado |
+| Veterinario | Registrar tratamientos y sus motivos al completar un turno. | Falta la selección de tratamientos en Completar | Pendiente |
+| Veterinario | Consultar, aplicar y levantar vetos. | Faltan las acciones en Detalle del tutor | Pendiente |
+| Veterinario | Registrar una reserva presencial para un tutor con veto vigente. | Falta el formulario de reserva presencial | Pendiente |
+| Administrador | Gestionar veterinarios. | Gestionar veterinarios | Realizado |
+| Administrador | Gestionar catálogos. | Gestionar catálogos | Realizado |
+| Administrador | Consultar movimientos de auditoría. | Consultar auditoría → Movimientos | Realizado |
+| Administrador | Consultar errores de la API. | Consultar auditoría → Errores | Realizado |
+| Administrador | Consultar informes por período y generar sus PDF. | Generar informes | Realizado |
