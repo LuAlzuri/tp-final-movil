@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
 using Turnero.App.Auditoria;
 using Turnero.App.Catalogos;
+using Turnero.App.Cupos;
 using Turnero.App.Perros;
 using Turnero.App.Seguridad;
 using Turnero.App.Turnos;
@@ -36,6 +37,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<TurnosApi>();
         builder.Services.AddSingleton<TutoresApi>();
         builder.Services.AddSingleton<PerrosApi>();
+        builder.Services.AddSingleton<CuposApi>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();

@@ -1,0 +1,85 @@
+@using Turnero.App.Cupos
+@inject CuposApi Api
+@inject NavigationManager Navegacion
+@implements IDisposable
+
+@if (CupoId is int elegido)
+{
+    <section class="gestion-tarjeta">
+        <h2 class="gestion-nombre">Servicios del turno</h2>
+        @if (cupos?.Find(cupo => cupo.Id == elegido) is { } seleccionado)
+        {
+            <p>@seleccionado.FechaCupo.ToString("dd/MM/yyyy")</p>
+        }
+        <p class="mb-0">En construcción.</p>
+    </section>
+}
+else if (error is not null)
+{
+    <p class="alert alert-danger" role="alert">@error</p>
+    <button type="button" class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Reintentar</button>
+}
+else if (cupos is null)
+{
+    <p class="gestion-tarjeta mb-0" role="status">Cargando días disponibles…</p>
+}
+else if (cupos.Count == 0)
+{
+    <p class="gestion-tarjeta mb-0" role="status">Por ahora no hay cupos disponibles.</p>
+}
+else
+{
+    <section aria-labelledby="dias-disponibles">
+        <h2 id="dias-disponibles" class="visually-hidden">Días disponibles</h2>
+        <ul class="solicitud-dias list-unstyled d-grid mb-0">
+            @foreach (var cupo in cupos)
+            {
+                <li class="solicitud-dia gestion-tarjeta" @key="cupo.Id">
+                    <div class="solicitud-encabezado d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <h3 class="solicitud-dia-nombre fw-bold text-capitalize mb-0">@cupo.Dia</h3>
+                        <span class="solicitud-cantidad fw-semibold">
+                            @cupo.CuposDisponibles @(cupo.CuposDisponibles == 1 ? "cupo" : "cupos")
+                        </span>
+                    </div>
+                    <time class="solicitud-fecha d-block mt-2" datetime="@cupo.FechaCupo.ToString("yyyy-MM-dd")">@cupo.FechaCupo.ToString("dd/MM/yyyy")</time>
+                    <div class="d-flex justify-content-end mt-3">
+                        <a class="btn solicitud-boton rounded-pill fw-semibold"
+                           href="@Navegacion.GetUriWithQueryParameter("cupo", cupo.Id)"
+                           aria-label="@($"Solicitar turno para el {cupo.FechaCupo:dd/MM/yyyy}")">Solicitar</a>
+                    </div>
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+@code {
+    [Parameter] public int? CupoId { get; set; }
+
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<CupoDiario>? cupos;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        error = null;
+        try
+        {
+            var disponibles = await Api.ListarAsync(cancelacion.Token);
+            cupos = disponibles.Where(cupo => cupo.CuposDisponibles > 0).OrderBy(cupo => cupo.FechaCupo).ToList();
+        }
+        catch (GestionApiException ex)
+        {
+            error = ex.Message;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+
+    public void Dispose()
+    {
+        cancelacion.Cancel();
+        cancelacion.Dispose();
+    }
+}
