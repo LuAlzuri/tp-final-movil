@@ -1,23 +1,26 @@
-# Turnero Peluquería 1.0 — Prueba Android
+# Turnero Peluquería 1.0.1 — Prueba Android
 
-APK para probar la aplicación en celulares Android ARM64 y obtener capturas de las pantallas por rol.
+APK de prueba actualizada con los últimos cambios de `main`, commit `cac5fad0421252d6a5ea93a9c6b96264854a2d4b`.
+
+Incluye las mejoras de cierre de turnos y gestión de patologías integradas en el PR #37.
 
 ## Instalación
 
-1. Descargar `Turnero-Peluqueria-arm64-prueba.apk` en el celular.
-2. Permitir temporalmente la instalación de aplicaciones desde el navegador o gestor de archivos utilizado.
-3. Abrir el APK e instalarlo.
+1. Descargar `Turnero-Peluqueria-arm64-prueba.apk`.
+2. Si está instalada la APK anterior, desinstalarla primero: esta compilación usa una clave de desarrollo diferente y Android no permite actualizar sobre una firma distinta. Se elimina el estado local de la aplicación; los datos de la API se conservan.
+3. Permitir temporalmente la instalación desde el navegador o gestor de archivos utilizado, abrir la APK e instalarla.
 4. Iniciar sesión con una cuenta autorizada de la API configurada.
 
-Requisitos: Android 7.0 (API 24) o superior y procesador ARM64 (`arm64-v8a`). Requiere conectividad con la API `https://trabajo-final-vet-mov.runasp.net/`.
+Requisitos: Android 7.0 (API 24) o superior y procesador ARM64 (`arm64-v8a`). Requiere conectividad con `https://trabajo-final-vet-mov.runasp.net/`.
 
 ## Estado de esta versión
 
-- Versión de aplicación: 1.0, código 1.
-- Compilación Debug de prueba, firmada con una clave de desarrollo. No es una publicación en Google Play.
-- APK con dependencias incluidas; no necesita Visual Studio ni un depurador en el celular.
-- Compilación completada con cero errores y advertencias; firma APK v2 y v3 verificada.
-- Ejecución y acceso a cuentas todavía no validados en un dispositivo: el emulador del entorno no permitió completar la prueba. Esta publicación debe marcarse como versión preliminar.
-- Se usó `MauiXamlInflator=XamlC` como opción de compilación local, sin cambiar el proyecto.
+- Versión: 1.0.1; código: 2.
+- Compilación Debug de prueba con dependencias incluidas, sin necesidad de Visual Studio ni depurador en el celular.
+- Firma de desarrollo APK v2 y v3 verificada. No es una publicación para Google Play.
+- Compilación completada correctamente y metadatos del paquete verificados.
+- Ejecución y acceso a cuentas no validados en un dispositivo; versión preliminar.
+- Se usó `MauiXamlInflator=XamlC` como parámetro de compilación, sin modificar el proyecto.
+- No incluye contraseñas de usuarios ni el archivo de la clave de firma.
 
-Código equivalente al commit de main `55cde380c55e57bc7dc89f8f119f16221e5be120`. El APK no incluye contraseñas de usuarios ni el archivo de la clave de firma.
+El archivo `.sha256` permite comprobar la integridad de la descarga.
