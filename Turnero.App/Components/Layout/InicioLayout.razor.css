@@ -126,11 +126,6 @@
     pointer-events: none;
 }
 
-.inicio-pie-mascota .inicio-atajo + .inicio-atajo::before {
-    inset-inline-start: auto;
-    inset-inline-end: 0;
-}
-
 @media (orientation: landscape) and (min-width: 32rem) and (max-height: 37.5rem) {
     .inicio-pantalla {
         width: min(100%, 48rem);
