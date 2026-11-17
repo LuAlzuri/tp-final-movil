@@ -102,6 +102,8 @@ internal static partial class VerificacionAutenticacion
         Autorizar(cliente, null);
         var segundaSesion = await IniciarSesionAsync(cliente, "tutor@turnero.test");
         Autorizar(cliente, tutor.Token);
+        await EsperarCodigo(cliente.PostAsJsonAsync(Ruta + "cambiar-contrasena", Cambio(ContrasenaInicial, new string('a', 129))),
+            HttpStatusCode.BadRequest, "La contraseña conserva el máximo de 128 caracteres");
         await EsperarCodigo(cliente.PostAsJsonAsync(Ruta + "cambiar-contrasena", Cambio(ContrasenaInicial, ContrasenaNueva)),
             HttpStatusCode.NoContent, "El tutor debe poder cambiar su contraseña");
         await EsperarCodigo(cliente.GetAsync(Ruta + "mi-perfil"), HttpStatusCode.Unauthorized, "El cambio debe invalidar el token utilizado");

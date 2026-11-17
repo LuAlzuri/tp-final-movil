@@ -76,11 +76,22 @@ internal static partial class VerificacionAutenticacion
         await EsperarCodigo(cliente.PostAsJsonAsync(rutaTurnos + "/presencial", datos), HttpStatusCode.Forbidden,
             "La reserva presencial requiere un veterinario");
         await EsperarCodigo(cliente.GetAsync(rutaVetos), HttpStatusCode.Forbidden, "El historial de vetos es de uso veterinario");
+        await EsperarCodigo(cliente.GetAsync(rutaVetos + "/vigente"), HttpStatusCode.Forbidden, "El tutor no consulta el estado interno de vetos");
 
         Autorizar(cliente, vet.Token);
+        Verificar((await cliente.GetFromJsonAsync<EstadoVetoRespuesta>(rutaVetos + "/vigente"))?.Veto?.Id == automatico.Id,
+            "El veto vigente se consulta sin depender del historial paginado");
         await EsperarCodigo(cliente.PostAsync(rutaVetos, null), HttpStatusCode.Conflict, "Solo puede existir un veto vigente");
         var presencial = await ReservarAsync(vet.Token, rutaTurnos + "/presencial", datos);
-        Verificar(presencial is { EstadoId: Estado.Pendiente, CuposReservados: 1 }, "La reserva presencial conserva el flujo de aprobación");
+        Verificar(presencial is { EstadoId: Estado.Aprobado, EsPresencial: true, CuposReservados: 1 }
+            && presencial.VeterinarioId == vet.Usuario.VeterinarioId, "La reserva presencial nace aprobada con el veterinario responsable");
+        Autorizar(cliente, tutor.Token);
+        await EsperarCodigo(cliente.PostAsync($"{rutaTurnos}/{presencial.Id}/cancelar", null), HttpStatusCode.Forbidden,
+            "El tutor no puede cancelar una reserva presencial aun llamando directamente a la API");
+        var visible = await cliente.GetFromJsonAsync<TurnoRespuesta>($"{rutaTurnos}/{presencial.Id}");
+        Verificar(visible is { EstadoId: Estado.Aprobado, EsPresencial: true, CuposReservados: 1 },
+            "La cancelación prohibida conserva el turno y la reserva y permite consultarlos");
+        Autorizar(cliente, vet.Token);
         await EsperarCodigo(cliente.PostAsJsonAsync($"{rutaVetos}/{automatico.Id}/levantar", new MotivoVetoSolicitud { Motivo = " Revisión presencial " }),
             HttpStatusCode.NoContent, "El veterinario puede levantar el veto");
         await EsperarCodigo(cliente.PostAsync($"{rutaVetos}/{automatico.Id}/levantar", null),
@@ -88,7 +99,13 @@ internal static partial class VerificacionAutenticacion
         await EsperarCodigo(cliente.PostAsJsonAsync(rutaTurnos + "/presencial", datos),
             HttpStatusCode.Conflict, "La reserva presencial se usa para tutores con veto vigente");
 
-        await CancelarComoTutorAsync(presencial.Id);
+        Autorizar(cliente, tutor.Token);
+        await EsperarCodigo(cliente.PostAsync($"{rutaTurnos}/{presencial.Id}/cancelar", null), HttpStatusCode.Forbidden,
+            "Levantar el veto no habilita la cancelación del turno presencial por el tutor");
+        Autorizar(cliente, vet.Token);
+        await EsperarCodigo(cliente.PostAsync($"{rutaTurnos}/{presencial.Id}/cancelar", null), HttpStatusCode.NoContent,
+            "El veterinario conserva la cancelación de las reservas presenciales");
+        await CancelarComoTutorAsync((await ReservarAsync(tutor.Token, rutaTurnos, datos)).Id);
         await CancelarComoTutorAsync((await ReservarAsync(tutor.Token, rutaTurnos, datos)).Id);
         Verificar(!await db.Vetos.AnyAsync(v => v.TutorId == tutorId && v.FechaFin == null),
             "Levantar el veto reinicia el conteo");
@@ -136,5 +153,50 @@ internal static partial class VerificacionAutenticacion
         Verificar(solicitudes?.Any(a => a.Accion == "SolicitarPresencial"
             && a.EntidadId == presencial.Id.ToString() && a.UsuarioId == vet.Usuario.Id) == true,
             "La reserva presencial queda auditada a nombre del veterinario");
+        Verificar(solicitudes?.Count(a => a.Accion == "Aprobar" && a.EntidadId == presencial.Id.ToString()
+            && a.UsuarioId == vet.Usuario.Id) == 1, "La aprobación directa queda auditada una única vez");
+        Verificar(solicitudes?.Any(a => a.Accion == "CancelarPorTutor" && a.EntidadId == presencial.Id.ToString()) == false,
+            "Los intentos bloqueados no generan cancelaciones en auditoría");
+
+        await EsperarCodigo(cliente.GetAsync(rutaVetos + "/vigente"), HttpStatusCode.Forbidden,
+            "El administrador tampoco accede a los vetos exclusivos del veterinario");
+        Autorizar(cliente, null);
+        await EsperarCodigo(cliente.GetAsync(rutaVetos + "/vigente"), HttpStatusCode.Unauthorized,
+            "Consultar veto vigente requiere autenticación");
+        Autorizar(cliente, vet.Token);
+        Verificar((await cliente.GetFromJsonAsync<EstadoVetoRespuesta>(rutaVetos + "/vigente"))?.Veto is null,
+            "El estado sin veto tiene una respuesta explícita");
+        await EsperarCodigo(cliente.PostAsJsonAsync(rutaVetos, new MotivoVetoSolicitud { Motivo = new string('a', 501) }),
+            HttpStatusCode.BadRequest, "El motivo conserva el máximo de 500 caracteres");
+        using var altaLimite = await cliente.PostAsJsonAsync(rutaVetos, new MotivoVetoSolicitud { Motivo = new string('a', 500) });
+        Verificar(altaLimite.StatusCode == HttpStatusCode.Created, "El motivo acepta exactamente 500 caracteres");
+        var limite = (await altaLimite.Content.ReadFromJsonAsync<VetoRespuesta>())!;
+
+        // Una página llena de registros finalizados nunca debe ocultar el veto vigente.
+        var cerrados = Enumerable.Range(0, 21).Select(i => new Veto
+        {
+            TutorId = tutorId, VeterinarioId = vet.Usuario.VeterinarioId,
+            FechaInicio = DateTime.UtcNow.AddMinutes(i + 1), FechaFin = DateTime.UtcNow.AddMinutes(i + 2)
+        }).ToList();
+        db.Vetos.AddRange(cerrados);
+        await db.SaveChangesAsync();
+        var primera = await cliente.GetFromJsonAsync<List<VetoRespuesta>>(rutaVetos + "?pagina=1&tamano=20");
+        Verificar(primera?.Count == 20 && primera.All(v => v.FechaFin is not null), "La primera página puede no contener el veto vigente");
+        Verificar((await cliente.GetFromJsonAsync<EstadoVetoRespuesta>(rutaVetos + "/vigente"))?.Veto?.Id == limite.Id,
+            "La consulta vigente encuentra vetos fuera de la primera página");
+        db.Vetos.RemoveRange(cerrados);
+        cupoHoy.NroCupoDis += 2;
+        await db.SaveChangesAsync();
+        var atencionVetada = await ReservarAsync(vet.Token, rutaTurnos + "/presencial", datos with { CupoId = cupoHoy.Id });
+        Verificar(atencionVetada.EstadoId == Estado.Aprobado, "La reserva presencial puede completarse sin otra aprobación");
+        await EsperarCodigo(cliente.PostAsJsonAsync($"{rutaTurnos}/{atencionVetada.Id}/completar", new CompletarTurnoSolicitud { ServicioIdsCompletados = [servicioId] }),
+            HttpStatusCode.NoContent, "Se puede completar una atención con veto vigente");
+        Verificar((await cliente.GetFromJsonAsync<EstadoVetoRespuesta>(rutaVetos + "/vigente"))?.Veto?.Id == limite.Id,
+            "Completar la atención no levanta el veto vigente");
+        await EsperarCodigo(cliente.PostAsJsonAsync($"{rutaVetos}/{limite.Id}/levantar", new MotivoVetoSolicitud { Motivo = new string('a', 501) }),
+            HttpStatusCode.BadRequest, "El levantamiento también valida el máximo del motivo");
+        await EsperarCodigo(cliente.PostAsync($"{rutaVetos}/{limite.Id}/levantar", null), HttpStatusCode.NoContent,
+            "El levantamiento permite volver a reservar");
+        await ReservarAsync(tutor.Token, rutaTurnos, datos);
     }
 }

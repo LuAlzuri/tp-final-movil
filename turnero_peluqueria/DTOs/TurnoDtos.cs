@@ -59,4 +59,4 @@ public sealed record TratamientoTurnoRespuesta(int TratamientoId, string Descrip
 public sealed record TurnoRespuesta(int Id, int PerroId, string PerroNombre, int CupoId, DateOnly FechaCupo,
     int CuposReservados, string? ObservacionCupo, int EstadoId, string EstadoDescripcion, int? VeterinarioId, string? Observaciones,
     DateTime FechaSolicitud, DateTime FechaEstado, List<ServicioTurnoRespuesta> Servicios,
-    List<TratamientoTurnoRespuesta> Tratamientos);
+    List<TratamientoTurnoRespuesta> Tratamientos, bool EsPresencial = false);

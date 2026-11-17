@@ -24,16 +24,26 @@ public class VetosController(AppDbContext db, VetosService vetos) : ControllerBa
         if (!await db.Tutores.AnyAsync(t => t.Id == tutorId, ct))
             throw new ApiException("No se encontró el tutor.", StatusCodes.Status404NotFound);
 
-        var historial = await db.Vetos.AsNoTracking().Where(v => v.TutorId == tutorId)
+        var historial = await db.Vetos.AsNoTracking().Include(v => v.Veterinario).ThenInclude(v => v!.Usuario).Where(v => v.TutorId == tutorId)
             .OrderByDescending(v => v.FechaInicio).ThenByDescending(v => v.Id)
             .Skip((pagina - 1) * tamano).Take(tamano).ToListAsync(ct);
         return historial.Select(Respuesta).ToList();
     }
 
+    [HttpGet("vigente")]
+    public async Task<ActionResult<EstadoVetoRespuesta>> Vigente(int tutorId, CancellationToken ct)
+    {
+        if (!await db.Tutores.AnyAsync(t => t.Id == tutorId, ct))
+            throw new ApiException("No se encontró el tutor.", StatusCodes.Status404NotFound);
+        var veto = await db.Vetos.AsNoTracking().Include(v => v.Veterinario).ThenInclude(v => v!.Usuario)
+            .SingleOrDefaultAsync(v => v.TutorId == tutorId && v.FechaFin == null, ct);
+        return new EstadoVetoRespuesta(veto is null ? null : Respuesta(veto));
+    }
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<VetoRespuesta>> ObtenerPorId(int tutorId, int id, CancellationToken ct)
     {
-        var veto = await db.Vetos.AsNoTracking().SingleOrDefaultAsync(v => v.Id == id && v.TutorId == tutorId, ct)
+        var veto = await db.Vetos.AsNoTracking().Include(v => v.Veterinario).ThenInclude(v => v!.Usuario).SingleOrDefaultAsync(v => v.Id == id && v.TutorId == tutorId, ct)
             ?? throw new ApiException("No se encontró el veto del tutor.", StatusCodes.Status404NotFound);
         return Respuesta(veto);
     }
@@ -58,5 +68,6 @@ public class VetosController(AppDbContext db, VetosService vetos) : ControllerBa
         ?? throw new ApiException("La sesión no es válida.", StatusCodes.Status401Unauthorized);
 
     private static VetoRespuesta Respuesta(Veto v) =>
-        new(v.Id, v.TutorId, v.VeterinarioId, v.FechaInicio, v.Motivo, v.FechaFin, v.MotivoFinVeto);
+        new(v.Id, v.TutorId, v.VeterinarioId, v.FechaInicio, v.Motivo, v.FechaFin, v.MotivoFinVeto,
+            v.Veterinario is { } responsable ? $"{responsable.Usuario.Nombre} {responsable.Usuario.Apellido}".Trim() : null);
 }

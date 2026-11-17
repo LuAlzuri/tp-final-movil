@@ -37,7 +37,11 @@
                         <EtiquetaEstadoTurno Estado="@turno.EstadoId" Descripcion="@turno.EstadoDescripcion" />
                     </div>
                     <time class="small d-block mt-2" datetime="@turno.FechaCupo.ToString("yyyy-MM-dd")">@turno.FechaCupo.ToString("dd/MM/yyyy")</time>
-                    @if (turno.EstadoId is EstadoTurno.Pendiente or EstadoTurno.Aprobado)
+                    @if (turno.EsPresencial)
+                    {
+                        <p class="small mt-2 mb-0">Reserva presencial. Para consultar cambios o cancelaciones, comunicate con el establecimiento.</p>
+                    }
+                    @if (turno.PuedeCancelarTutor)
                     {
                         <div class="d-flex justify-content-end mt-3">
                             <button type="button" class="btn gestion-neutro estados-tutor-cancelar rounded-pill fw-semibold"
@@ -90,13 +94,14 @@
 
     private async Task PedirConfirmacionAsync(Turno turno)
     {
+        if (!turno.PuedeCancelarTutor || cancelando) return;
         seleccionado = turno;
         await dialogo.AbrirAsync($"turno #{turno.Id}");
     }
 
     private async Task CancelarTurnoAsync()
     {
-        if (cancelando || seleccionado is not { } turno || turnos is not { } listado)
+        if (cancelando || seleccionado is not { PuedeCancelarTutor: true } turno || turnos is not { } listado)
             return;
 
         cancelando = true;

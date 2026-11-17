@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Compile Include="../../Turnero.App/Seguridad/*.cs" Link="Seguridad/%(Filename)%(Extension)" />
+    <Compile Include="../../Turnero.App/Vetos/VetosApi.cs" Link="VetosApi.cs" />
+    <Compile Include="../../Turnero.App/Turnos/TurnosApi.cs" Link="TurnosApi.cs" />
+    <Compile Include="../../Turnero.App/Tutores/Tutor.cs" Link="Tutor.cs" />
+    <Compile Include="../../Turnero.App/Veterinarios/Veterinario.cs" Link="Veterinario.cs" />
+  </ItemGroup>
+</Project>

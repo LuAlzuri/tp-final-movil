@@ -1,0 +1,77 @@
+@page "/veterinario/tutores/{Id:int}/reserva-presencial"
+@attribute [Authorize(Roles = Roles.Veterinario)]
+@layout InicioLayout
+@using Turnero.App.Perros
+@using Turnero.App.Cupos
+@using Turnero.App.Vetos
+@inject PerrosApi Perros
+@inject CuposApi Cupos
+@inject VetosApi Vetos
+@implements IDisposable
+
+<section class="gestion-pantalla"><div class="gestion-panel">
+    <h1 class="gestion-titulo">Reserva presencial</h1>
+    @if (error is not null)
+    {
+        <p class="alert alert-danger" role="alert">@error</p>
+        <button class="btn gestion-neutro rounded-pill" @onclick="CargarAsync">Actualizar</button>
+    }
+    else if (perros is null || dias is null) { <p role="status">Cargando disponibilidad…</p> }
+    else if (!vetado) { <p class="alert alert-warning">El tutor no tiene un veto vigente. La reserva presencial requiere un veto vigente.</p> }
+    else
+    {
+        <p>La reserva quedará aprobada. El tutor no podrá cancelarla desde la app.</p>
+        <label class="form-label fw-semibold" for="mascota-presencial">Mascota del tutor</label>
+        <select id="mascota-presencial" class="form-select mb-3" @bind="perroId" disabled="@continuar">
+            <option value="0">Seleccioná una mascota</option>
+            @foreach (var perro in perros) { <option value="@perro.Id">@perro.Nombre</option> }
+        </select>
+        <label class="form-label fw-semibold" for="dia-presencial">Día con disponibilidad</label>
+        <select id="dia-presencial" class="form-select mb-3" @bind="cupoId" disabled="@continuar">
+            <option value="0">Seleccioná un día</option>
+            @foreach (var dia in dias) { <option value="@dia.Id">@dia.Dia @dia.FechaCupo.ToString("dd/MM/yyyy") · @dia.CuposDisponibles cupos</option> }
+        </select>
+        @if (perros.Count == 0) { <p>No hay mascotas registradas para este tutor.</p> }
+        @if (dias.Count == 0) { <p>No hay días con cupos disponibles.</p> }
+        <button class="btn gestion-principal rounded-pill mb-3" disabled="@(continuar || perroId <= 0 || cupoId <= 0)" @onclick="() => continuar = true">Elegir servicios</button>
+        @if (continuar)
+        {
+            <FormularioSolicitudTurno @key="(Id, perroId, cupoId)" PerroId="@perroId" CupoId="@cupoId" TutorPresencialId="@Id" />
+        }
+    }
+</div></section>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private readonly CancellationTokenSource cancelacion = new();
+    private List<Perro>? perros;
+    private List<CupoDiario>? dias;
+    private bool vetado, continuar;
+    private int perroId, cupoId;
+    private int versionCarga;
+    private string? error;
+    protected override Task OnParametersSetAsync() => CargarAsync();
+    private async Task CargarAsync()
+    {
+        var version = ++versionCarga;
+        var tutorId = Id;
+        error = null;
+        continuar = false;
+        perros = null;
+        perroId = cupoId = 0;
+        try
+        {
+            var veto = await Vetos.VigenteAsync(tutorId, cancelacion.Token);
+            var mascotas = await Perros.ListarAsync(tutorId, cancelacion.Token);
+            var hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "America/Argentina/Buenos_Aires"));
+            var disponibles = (await Cupos.ListarAsync(cancelacion.Token)).Where(d => d.FechaCupo >= hoy && d.CuposDisponibles > 0).OrderBy(d => d.FechaCupo).ToList();
+            if (version != versionCarga) return;
+            vetado = veto is not null;
+            perros = mascotas;
+            dias = disponibles;
+        }
+        catch (GestionApiException ex) { if (version == versionCarga) error = ex.Message; }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+    public void Dispose() { cancelacion.Cancel(); cancelacion.Dispose(); }
+}

@@ -122,5 +122,5 @@ public class TurnosController(AppDbContext db, TurnosService turnos) : Controlle
             db.ServiciosPorTurno.Where(s => s.TurnoId == r.TurnoId).OrderBy(s => s.ServicioId)
                 .Select(s => new ServicioTurnoRespuesta(s.ServicioId, s.Servicio.Descripcion, s.Completado)).ToList(),
             db.TratamientosPorTurno.Where(t => t.TurnoId == r.TurnoId).OrderBy(t => t.TratamientoId)
-                .Select(t => new TratamientoTurnoRespuesta(t.TratamientoId, t.Tratamiento.Descripcion, t.Razon)).ToList()));
+                .Select(t => new TratamientoTurnoRespuesta(t.TratamientoId, t.Tratamiento.Descripcion, t.Razon)).ToList(), r.Turno.EsPresencial));
 }

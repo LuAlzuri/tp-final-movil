@@ -8,13 +8,13 @@ El proceso abarca desde la solicitud hasta la finalización del turno, con contr
 
 | Rol | Funcionalidades disponibles en la aplicación |
 | --- | --- |
-| **Tutor** | Consultar sus perros, ver cupos disponibles, solicitar turnos con uno a diez servicios, cancelar solicitudes pendientes o aprobadas y consultar estados e historial. |
-| **Veterinario** | Gestionar tutores y teléfonos, registrar y editar perros, subir o reemplazar sus fotos, consultar patologías, administrar cupos diarios y catálogos de servicios, tratamientos y patologías; aprobar, rechazar, cancelar y completar turnos indicando servicios realizados y observaciones. |
+| **Tutor** | Consultar sus perros, ver cupos disponibles, solicitar turnos con uno a diez servicios, cancelar solicitudes normales pendientes o aprobadas y consultar estados e historial. |
+| **Veterinario** | Gestionar tutores y teléfonos, registrar y editar perros, subir o reemplazar sus fotos, consultar patologías, administrar cupos diarios y catálogos de servicios, tratamientos y patologías; aprobar, rechazar, cancelar y completar turnos indicando servicios realizados y observaciones; consultar, aplicar y levantar vetos y registrar reservas presenciales. |
 | **Administrador** | Gestionar veterinarios y catálogos, consultar movimientos de auditoría y errores de la API, consultar informes por período y generar sus PDF. |
 
 El administrador crea las cuentas de los veterinarios y estos registran a los tutores. Los permisos se comprueban en la API; las consultas del tutor se restringen a sus propias mascotas y turnos.
 
-**Alcance actual de la interfaz.** Quedan pendientes las pantallas para cambiar la contraseña, quitar la foto de un perro, gestionar vetos y registrar reservas presenciales para tutores con veto vigente.
+**Alcance actual de la interfaz.** Quedan pendientes las pantallas para cambiar la contraseña y quitar la foto de un perro.
 
 ## Cómo se gestiona un turno
 
@@ -32,7 +32,7 @@ stateDiagram-v2
 - **Disponibilidad por día.** Cada solicitud reserva inicialmente un cupo. Al aprobarla, el veterinario puede ajustar la cantidad ocupada si existe disponibilidad. Los turnos pendientes, aprobados y completados consumen capacidad; rechazar o cancelar libera la reserva.
 - **Validación de la solicitud.** No se admiten fechas pasadas, servicios repetidos ni más de un turno activo del mismo perro para el mismo día. Si para la fecha solicitada el perro tendrá menos de 45 días y no tiene el calendario de vacunación completo, la solicitud se rechaza.
 - **Finalización de la atención.** Solo puede completarse un turno aprobado cuya fecha ya haya llegado. Se distinguen los servicios solicitados de los efectivamente realizados y se conservan las observaciones y los tratamientos registrados.
-- **Vetos de reserva.** Tres cancelaciones del tutor generan un veto automático, con un conteo que se reinicia tras una atención completada o el levantamiento de un veto. El veterinario también puede aplicar vetos manuales. Un tutor vetado conserva la posibilidad de recibir una reserva presencial gestionada por un veterinario mediante la API.
+- **Vetos de reserva.** Tres cancelaciones del tutor generan un veto automático, con un conteo que se reinicia tras una atención completada o el levantamiento de un veto. El veterinario también puede aplicar vetos manuales. Un tutor vetado conserva la posibilidad de recibir una reserva presencial gestionada por un veterinario desde el detalle del tutor.
 
 ## Arquitectura y persistencia
 
@@ -199,7 +199,7 @@ Las fotos se guardan en `turnero_peluqueria/wwwroot/uploads`. Al desplegar, esa 
 | Tutor | Consultar sus perros. | Inicio del tutor y menú de cada mascota | Realizado |
 | Tutor | Consultar cupos y servicios. | Solicitar turno | Realizado |
 | Tutor | Solicitar un turno con uno a diez servicios. | Solicitar turno → Confirmar | Realizado |
-| Tutor | Cancelar un turno pendiente o aprobado. | Estados de turnos → Cancelar | Realizado |
+| Tutor | Cancelar un turno normal pendiente o aprobado; las reservas presenciales se gestionan con el establecimiento. | Estados de turnos → Cancelar | Realizado |
 | Tutor | Consultar el estado y el historial de sus turnos. | Estados de turnos y Consultar historial | Realizado |
 | Veterinario | Gestionar tutores y teléfonos. | Listado de tutores → Detalle | Realizado |
 | Veterinario | Gestionar perros y agregar o reemplazar sus fotos. | Detalle del tutor → Sus perros → Gestionar | Realizado |
@@ -211,10 +211,48 @@ Las fotos se guardan en `turnero_peluqueria/wwwroot/uploads`. Al desplegar, esa 
 | Veterinario | Consultar, aprobar, rechazar y cancelar turnos según su estado. | Turnos → Gestionar solicitudes | Realizado |
 | Veterinario | Completar la atención y registrar los servicios realizados y las observaciones. | Turnos → Completar turno | Realizado |
 | Veterinario | Registrar tratamientos y sus motivos al completar un turno. | Turnos → Completar turno → Gestionar | Realizado |
-| Veterinario | Consultar, aplicar y levantar vetos. | Faltan las acciones en Detalle del tutor | Pendiente |
-| Veterinario | Registrar una reserva presencial para un tutor con veto vigente. | Falta el formulario de reserva presencial | Pendiente |
+| Veterinario | Consultar, aplicar y levantar vetos. | Detalle del tutor → Vetos del tutor e historial paginado | Realizado |
+| Veterinario | Registrar una reserva presencial para un tutor con veto vigente. | Detalle del tutor → Reserva presencial → Mascota, día y servicios | Realizado |
 | Administrador | Gestionar veterinarios. | Gestionar veterinarios | Realizado |
 | Administrador | Gestionar catálogos. | Gestionar catálogos | Realizado |
 | Administrador | Consultar movimientos de auditoría. | Consultar auditoría → Movimientos | Realizado |
 | Administrador | Consultar errores de la API. | Consultar auditoría → Errores | Realizado |
 | Administrador | Consultar informes por período y generar sus PDF. | Generar informes | Realizado |
+
+## Vetos y reserva presencial
+
+Desde **Veterinario → Listado de tutores → Detalle del tutor → Vetos del tutor** se consulta el estado vigente y el historial de 20 registros por página. Se muestran las fechas (UTC), motivos y el nombre del veterinario que aplicó el veto; los automáticos se identifican como tales. El contrato actual no registra un veterinario específico para el levantamiento: la identidad del actor se conserva en auditoría.
+
+Aplicar y levantar requieren confirmación, con motivo opcional de hasta 500 caracteres. Durante el envío se bloquean las acciones. Después de cada intento se consulta nuevamente el estado; ante un conflicto o respuesta incierta se exige cerrar el aviso y revisar el estado antes de repetir. No se reintentan automáticamente las escrituras.
+
+La consulta `GET /api/tutores/{tutorId}/vetos/vigente` devuelve `{ "veto": null }` o el veto vigente, sin depender de las páginas del historial. Este endpoint y el historial son exclusivos del veterinario. Las respuestas de veto incorporan `veterinarioNombre` cuando corresponde. **La API deberá incorporar estos cambios antes de utilizar esta versión del front con el servidor alojado.** Es necesario aplicar la migración `RegistrarOrigenPresencialTurno` antes de actualizar la API. Agrega `Turnos.EsPresencial` y recupera el origen de las reservas anteriores que tienen auditoría `SolicitarPresencial`; conserva sus estados.
+
+Con veto vigente aparece **Reserva presencial** en el detalle del tutor. Permite elegir una de sus mascotas, una fecha desde hoy con disponibilidad y entre uno y diez servicios. Reutiliza el selector de servicios y la confirmación de solicitud. Envía `POST /api/turnos/presencial`; queda aprobada directamente, con el veterinario responsable y registros de creación y aprobación en auditoría. El tutor no puede cancelarla desde la app ni llamando directamente a la API, aunque después se levante su veto. El veterinario conserva la cancelación y la finalización de la atención. La API conserva las validaciones de pertenencia, cupos, fechas y vigencia del veto.
+
+El tutor vetado conserva acceso a sus mascotas, estados e historial. Si solicita un turno, la API bloquea la operación y la interfaz indica que debe comunicarse con el establecimiento. La app del tutor no consulta endpoints internos de vetos.
+
+Reglas conservadas: el veto alcanza a todas las mascotas del tutor; tres cancelaciones del tutor generan el veto automático; los rechazos y cancelaciones del veterinario no cuentan. Completar una atención o levantar un veto reinician el conteo; completar no levanta un veto vigente. Se conserva un único veto vigente y la auditoría de operaciones.
+
+Los formularios de alta muestran el mínimo de 12 caracteres para la contraseña, sin informar su máximo como ayuda. Se mantienen `maxlength`, las validaciones de cliente y servidor y los errores por superar 128 caracteres.
+
+### Verificación de esta integración
+
+```powershell
+dotnet run --project tests/VerificacionAutenticacion/VerificacionAutenticacion.csproj
+dotnet run --project tests/VerificacionModelo/VerificacionModelo.csproj
+dotnet run --project tests/VerificacionVetosApp/VerificacionVetosApp.csproj
+```
+
+Las pruebas de API ejercitan el bloqueo, reserva presencial con aprobación directa y cancelación del tutor prohibida, finalización sin levantar el veto, levantamiento y nueva solicitud del tutor; también el veto automático entre mascotas, reinicios del conteo, permisos, auditoría, conflictos por operaciones repetidas, motivos de 500/501 caracteres y consulta vigente fuera de la primera página. Las pruebas del cliente usan un transporte HTTP simulado con los clientes reales y verifican autenticación, rutas, paginación, errores y límites de contraseña de los modelos de formularios.
+
+Para comprobar concurrencia real en SQL Server, configurar `TURNERO_SQLSERVER_PRUEBAS` con una instancia de pruebas y ejecutar:
+
+```powershell
+dotnet run --project tests/VerificacionAutenticacion/VerificacionAutenticacion.csproj -- --sqlserver
+```
+
+Este modo crea y elimina una base temporal; incluye altas y levantamientos de veto simultáneos. Se ejecutó este modo contra SQL Server LocalDB: 22 comprobaciones correctas, incluidas las operaciones de veto simultáneas. Queda pendiente repetir el circuito completo en Android contra una API local actualizada. Las comprobaciones de UI en navegador con datos simulados no sustituyen esa prueba integrada en el dispositivo.
+
+Resultado de esta revisión: 387 comprobaciones de API, 158 del modelo y 42 de clientes/formularios correctas; compilación Android sin errores ni advertencias. En navegador móvil se verificaron aplicación, historial, reserva presencial con confirmación y retorno al tutor, levantamiento y disposición horizontal, usando datos simulados.
+
+Para actualizar el servidor con este cambio: generar el script SQL idempotente con `dotnet ef migrations script --idempotent --project turnero_peluqueria --output artifacts/monsterasp-migraciones.sql`, aplicar las migraciones pendientes en la base y luego publicar la API y actualizar la app. Esta implementación no ejecuta cambios sobre MonsterASP ni publica versiones. Las solicitudes normales siguen pendientes hasta la aprobación del veterinario. Las reservas presenciales anteriores conservan su estado: si estaban pendientes, el veterinario debe aprobarlas por el circuito existente.
