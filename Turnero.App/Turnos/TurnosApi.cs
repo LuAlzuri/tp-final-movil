@@ -15,7 +15,10 @@ public enum EstadoTurno
 
 internal sealed record Turno(int Id, int PerroId, string PerroNombre, EstadoTurno EstadoId, string EstadoDescripcion, DateOnly FechaCupo,
     int CuposReservados, string? ObservacionCupo, string? Observaciones,
-    List<ServicioTurno> Servicios, List<TratamientoTurno> Tratamientos);
+    List<ServicioTurno> Servicios, List<TratamientoTurno> Tratamientos, bool EsPresencial = false)
+{
+    public bool PuedeCancelarTutor => !EsPresencial && EstadoId is EstadoTurno.Pendiente or EstadoTurno.Aprobado;
+}
 
 internal sealed record ServicioTurno(int ServicioId, string Descripcion, bool Completado);
 internal sealed record TratamientoTurno(string Descripcion, string? Razon);
@@ -47,6 +50,12 @@ internal sealed class TurnosApi(ApiGestion api)
     {
         using var contenido = JsonContent.Create(new { PerroId = perroId, CupoId = cupoId, ServicioIds = servicioIds });
         using var respuesta = await api.EnviarAsync(HttpMethod.Post, Ruta, ct, contenido, recurso: "turnos");
+    }
+
+    public async Task ReservarPresencialAsync(int perroId, int cupoId, IReadOnlyCollection<int> servicioIds, CancellationToken ct)
+    {
+        using var contenido = JsonContent.Create(new { PerroId = perroId, CupoId = cupoId, ServicioIds = servicioIds });
+        using var respuesta = await api.EnviarAsync(HttpMethod.Post, $"{Ruta}/presencial", ct, contenido, recurso: "turnos");
     }
 
     public Task<List<Turno>> ListarPorMascotaAsync(int perroId, CancellationToken ct, EstadoTurno? estado = null)

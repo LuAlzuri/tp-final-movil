@@ -9,4 +9,6 @@ public sealed record MotivoVetoSolicitud
 }
 
 public sealed record VetoRespuesta(int Id, int TutorId, int? VeterinarioId, DateTime FechaInicio,
-    string? Motivo, DateTime? FechaFin, string? MotivoFinVeto);
+    string? Motivo, DateTime? FechaFin, string? MotivoFinVeto, string? VeterinarioNombre = null);
+
+public sealed record EstadoVetoRespuesta(VetoRespuesta? Veto);

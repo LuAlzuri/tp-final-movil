@@ -616,6 +616,9 @@ namespace turnero_peluqueria.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("EsPresencial")
+                        .HasColumnType("bit");
+
                     b.Property<int>("EstadoId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")

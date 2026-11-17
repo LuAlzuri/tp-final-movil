@@ -51,7 +51,7 @@
                         <label class="form-label fw-semibold" for="cuenta-contrasena">Contraseña inicial</label>
                         <CampoContrasena Id="cuenta-contrasena" NombreCampo="contraseña inicial"
                                          DescribedBy="ayuda-contrasena" Disabled="@guardando" @bind-Value="alta.Contrasena" />
-                        <div id="ayuda-contrasena" class="form-text">Entre 12 y 128 caracteres.</div>
+                        <div id="ayuda-contrasena" class="form-text">Al menos 12 caracteres.</div>
                         <ValidationMessage For="() => alta.Contrasena" />
                     </div>
                     <div>

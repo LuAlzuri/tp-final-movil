@@ -36,6 +36,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<CatalogosApi>();
         builder.Services.AddSingleton<AuditoriaApi>();
         builder.Services.AddSingleton<TurnosApi>();
+        builder.Services.AddSingleton<Turnero.App.Vetos.VetosApi>();
         builder.Services.AddSingleton<TutoresApi>();
         builder.Services.AddSingleton<PerrosApi>();
         builder.Services.AddSingleton<CuposApi>();

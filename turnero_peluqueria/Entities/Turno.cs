@@ -6,6 +6,7 @@ public sealed class Turno
     public int PerroId { get; set; }
     public int EstadoId { get; set; } = Estado.Pendiente;
     public int? VeterinarioId { get; set; }
+    public bool EsPresencial { get; set; }
     public string? Observaciones { get; set; }
     public DateTime FechaSolicitud { get; set; } = DateTime.UtcNow;
     public DateTime FechaEstado { get; set; } = DateTime.UtcNow;

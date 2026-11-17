@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="2210" height="1620" viewBox="0 0 2210 1620" role="img" aria-labelledby="titulo descripcion">
   <title id="titulo">Diagrama entidad-relación del turnero de peluquería canina</title>
   <desc id="descripcion">Diagrama entidad-relación de SQL Server.</desc>
@@ -62,13 +62,13 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#192831}.h{font-size:29px;font-
       <polyline class="conexion" points="1480,1110 1420,1110" />
     </g>
     <g>
-      <polyline class="conexion" points="769,1248 769,1285 440,1285 440,1335" />
+      <polyline class="conexion" points="769,1272 769,1285 440,1285 440,1335" />
     </g>
     <g>
       <polyline class="conexion" points="440,1500 440,1437" />
     </g>
     <g>
-      <polyline class="conexion" points="925,1248 925,1285 1265,1285 1265,1335" />
+      <polyline class="conexion" points="925,1272 925,1285 1265,1285 1265,1335" />
     </g>
     <g>
       <polyline class="conexion" points="1480,1384 1420,1384" />
@@ -362,9 +362,9 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#192831}.h{font-size:29px;font-
     <text x="1779" y="1144" class="tipo" text-anchor="end">int</text>
   </g>
   <g id="Turnos" class="tabla">
-    <rect x="700" y="1050" width="310" height="198" class="marco" />
+    <rect x="700" y="1050" width="310" height="222" class="marco" />
     <rect x="700.5" y="1050.5" width="309" height="29.5" class="cab" />
-    <path d="M700 1080H1010 M754 1080V1248" class="division" />
+    <path d="M700 1080H1010 M754 1080V1272" class="division" />
     <text x="855" y="1070" class="nombre" text-anchor="middle">Turnos</text>
     <text x="727" y="1096" class="clave" text-anchor="middle">PK</text>
     <text x="763" y="1096" class="campo pk" text-anchor="start">id_turno</text>
@@ -393,6 +393,9 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#192831}.h{font-size:29px;font-
     </text>
     <text x="763" y="1240" class="campo" text-anchor="start">fecha_estado</text>
     <text x="999" y="1240" class="tipo" text-anchor="end">datetime</text>
+    <rect x="755" y="1248" width="254" height="24" class="alterno" />
+    <text x="763" y="1264" class="campo" text-anchor="start">EsPresencial</text>
+    <text x="999" y="1264" class="tipo" text-anchor="end">bit</text>
   </g>
   <g id="CuposTurnos" class="tabla">
     <rect x="1110" y="1050" width="310" height="126" class="marco" />
@@ -594,16 +597,16 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#192831}.h{font-size:29px;font-
     <text x="1462" y="1102" class="rel" text-anchor="middle">1</text>
     <rect x="1421.1" y="1092" width="33.8" height="13" rx="2" fill="#fff" />
     <text x="1438" y="1102" class="rel" text-anchor="middle">0..N</text>
-    <rect x="776" y="1256" width="13.7" height="13" rx="2" fill="#fff" />
-    <text x="779" y="1266" class="rel" text-anchor="start">1</text>
+    <rect x="776" y="1280" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="779" y="1290" class="rel" text-anchor="start">1</text>
     <rect x="447" y="1307" width="33.8" height="13" rx="2" fill="#fff" />
     <text x="450" y="1317" class="rel" text-anchor="start">0..N</text>
     <rect x="447" y="1472" width="13.7" height="13" rx="2" fill="#fff" />
     <text x="450" y="1482" class="rel" text-anchor="start">1</text>
     <rect x="447" y="1445" width="33.8" height="13" rx="2" fill="#fff" />
     <text x="450" y="1455" class="rel" text-anchor="start">0..N</text>
-    <rect x="932" y="1256" width="13.7" height="13" rx="2" fill="#fff" />
-    <text x="935" y="1266" class="rel" text-anchor="start">1</text>
+    <rect x="932" y="1280" width="13.7" height="13" rx="2" fill="#fff" />
+    <text x="935" y="1290" class="rel" text-anchor="start">1</text>
     <rect x="1272" y="1307" width="33.8" height="13" rx="2" fill="#fff" />
     <text x="1275" y="1317" class="rel" text-anchor="start">0..N</text>
     <rect x="1455.15" y="1366" width="13.7" height="13" rx="2" fill="#fff" />

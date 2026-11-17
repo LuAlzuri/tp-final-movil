@@ -74,13 +74,16 @@
 <dialog @ref="dialogo" class="gestion-dialogo solicitud-exito" aria-labelledby="solicitud-exito-titulo" @onclose="VolverAlMenu">
     <div class="solicitud-exito-icono mx-auto mb-3" aria-hidden="true">✓</div>
     <h2 id="solicitud-exito-titulo" class="h5 fw-bold">¡Tu solicitud se registró exitosamente!</h2>
-    <p class="mb-3">Queda pendiente de aprobación del veterinario.</p>
+    <p class="mb-3">@(TutorPresencialId.HasValue
+        ? "La reserva presencial quedó aprobada. El tutor no puede cancelarla desde la app."
+        : "Queda pendiente de aprobación del veterinario.")</p>
     <button type="button" class="btn gestion-neutro rounded-pill fw-semibold" @onclick="CerrarExitoAsync">Cerrar</button>
 </dialog>
 
 @code {
     [Parameter] public int PerroId { get; set; }
     [Parameter] public int CupoId { get; set; }
+    [Parameter] public int? TutorPresencialId { get; set; }
 
     private const int MaximoServicios = 10;
     private readonly CancellationTokenSource cancelacion = new();
@@ -149,12 +152,17 @@
         error = null;
         try
         {
-            await Turnos.SolicitarAsync(PerroId, CupoId, seleccionados.ToArray(), cancelacion.Token);
+            if (TutorPresencialId.HasValue)
+                await Turnos.ReservarPresencialAsync(PerroId, CupoId, seleccionados.ToArray(), cancelacion.Token);
+            else
+                await Turnos.SolicitarAsync(PerroId, CupoId, seleccionados.ToArray(), cancelacion.Token);
             registrado = true;
         }
         catch (GestionApiException ex)
         {
-            error = ex.Message;
+            error = ex.Estado == System.Net.HttpStatusCode.Forbidden && !TutorPresencialId.HasValue
+                ? ex.Message + " Comunicate con el establecimiento para coordinar una reserva presencial. Podés seguir consultando tus mascotas, turnos e historial."
+                : ex.Message;
         }
         catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
         finally
@@ -163,12 +171,13 @@
         }
     }
 
-    private void Cancelar() =>
-        Navegacion.NavigateTo(Navegacion.GetUriWithQueryParameter("cupo", (int?)null), replace: true);
+    private void Cancelar() => Navegacion.NavigateTo(TutorPresencialId is int tutor
+        ? $"veterinario/tutores/{tutor}" : Navegacion.GetUriWithQueryParameter("cupo", (int?)null), replace: true);
 
     private async Task CerrarExitoAsync() => await Js.InvokeVoidAsync("veteApp.cerrarConfirmacion", dialogo);
 
-    private void VolverAlMenu() => Navegacion.NavigateTo($"tutor/mascotas/{PerroId}", replace: true);
+    private void VolverAlMenu() => Navegacion.NavigateTo(TutorPresencialId is int tutor
+        ? $"veterinario/tutores/{tutor}" : $"tutor/mascotas/{PerroId}", replace: true);
 
     public void Dispose()
     {

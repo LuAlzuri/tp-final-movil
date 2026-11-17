@@ -84,14 +84,21 @@ Verificar(Entidad<Estado>().GetCheckConstraints().Any(c => c.Sql == "[id_estado]
 Verificar(Entidad<Turno>().GetCheckConstraints().Any(c => c.Sql == "[estado_id] NOT IN (2, 5, 6) OR [veterinario_id] IS NOT NULL"), "Un turno aprobado o atendido requiere veterinario.");
 
 var ensamblado = db.GetService<IMigrationsAssembly>();
-Verificar(ensamblado.Migrations.Count == 21, "Se espera una migracion por entidad y otra para semillas.");
+Verificar(ensamblado.Migrations.Count == 22, "Se esperan las migraciones iniciales y la del origen presencial del turno.");
 var tablasCreadas = new HashSet<string>();
 var filasSemilla = 0;
 foreach (var migracionInfo in ensamblado.Migrations.OrderBy(x => x.Key))
 {
     var migracion = ensamblado.CreateMigration(migracionInfo.Value, db.Database.ProviderName!);
     var creaciones = migracion.UpOperations.OfType<CreateTableOperation>().ToArray();
-    if (migracionInfo.Key.EndsWith("SembrarCatalogos"))
+    if (migracionInfo.Key.EndsWith("RegistrarOrigenPresencialTurno"))
+    {
+        Verificar(creaciones.Length == 0 && migracion.UpOperations.OfType<AddColumnOperation>().Any(c => c.Table == "Turnos" && c.Name == "EsPresencial"),
+            "La migracion presencial agrega el origen sin reconstruir tablas.");
+        Verificar(migracion.UpOperations.OfType<SqlOperation>().Any(s => s.Sql.Contains("SolicitarPresencial")),
+            "Las reservas presenciales existentes se identifican por su auditoria.");
+    }
+    else if (migracionInfo.Key.EndsWith("SembrarCatalogos"))
         Verificar(creaciones.Length == 0, "Las semillas deben estar separadas de la creacion de entidades.");
     else
         Verificar(creaciones.Length == 1, $"{migracionInfo.Key} debe crear una sola tabla.");

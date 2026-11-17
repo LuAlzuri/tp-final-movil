@@ -1,0 +1,143 @@
+@using Turnero.App.Vetos
+@using Microsoft.JSInterop
+@inject VetosApi Api
+@inject IJSRuntime Js
+@implements IDisposable
+
+<AuthorizeView Roles="@Roles.Veterinario">
+<section class="gestion-tarjeta mt-3" aria-labelledby="titulo-vetos">
+    <h2 id="titulo-vetos" class="gestion-nombre">Vetos del tutor</h2>
+    @if (error is not null)
+    {
+        <p class="alert alert-danger" role="alert">@error</p>
+        <button class="btn gestion-neutro rounded-pill" disabled="@ocupado" @onclick="CargarAsync">Actualizar</button>
+    }
+    @if (cargado)
+    {
+        <p class="@(vigente is null ? "alert alert-success" : "alert alert-warning")">@(vigente is null ? "Sin veto vigente" : "Veto vigente: no puede solicitar turnos desde la app para ninguna de sus mascotas.")</p>
+        @if (vigente is not null)
+        {
+            <p>Desde @Fecha(vigente.FechaInicio) · @Responsable(vigente)</p>
+            <p class="text-break">@(vigente.Motivo ?? "Sin motivo informado")</p>
+            <a class="btn gestion-principal rounded-pill mb-2" href="@($"veterinario/tutores/{TutorId}/reserva-presencial")">Reserva presencial</a>
+        }
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn gestion-principal rounded-pill" disabled="@ocupado" @onclick="AbrirAsync">@(vigente is null ? "Aplicar veto" : "Levantar veto")</button>
+            <button class="btn gestion-neutro rounded-pill" disabled="@ocupado" @onclick="MostrarHistorialAsync">Ver historial</button>
+        </div>
+    }
+    else if (error is null) { <p role="status">Consultando veto vigente…</p> }
+    @if (historial is not null)
+    {
+        <h3 class="h6 fw-bold mt-4">Historial de vetos</h3>
+        @if (historial.Count == 0) { <p>No hay vetos en esta página.</p> }
+        @foreach (var veto in historial)
+        {
+            <article class="border-top py-3" @key="veto.Id">
+                <strong>@(veto.FechaFin is null ? "Vigente" : "Levantado")</strong>
+                <p class="mb-1">Inicio: @Fecha(veto.FechaInicio) · @Responsable(veto)</p>
+                <p class="text-break mb-1">Motivo: @(veto.Motivo ?? "Sin motivo informado")</p>
+                @if (veto.FechaFin is DateTime fin)
+                {
+                    <p class="mb-1">Fin: @Fecha(fin)</p>
+                    <p class="text-break mb-0">Motivo del levantamiento: @(veto.MotivoFinVeto ?? "Sin motivo informado")</p>
+                }
+            </article>
+        }
+        <div class="d-flex align-items-center justify-content-between gap-2">
+            <button class="btn gestion-neutro rounded-pill" disabled="@(ocupado || pagina == 1)" @onclick="() => PaginarAsync(-1)">Anterior</button>
+            <span>Página @pagina</span>
+            <button class="btn gestion-neutro rounded-pill" disabled="@(ocupado || historial.Count < 20 || pagina >= 1000000)" @onclick="() => PaginarAsync(1)">Siguiente</button>
+        </div>
+    }
+</section>
+</AuthorizeView>
+
+<dialog @ref="dialogo" class="gestion-dialogo" aria-labelledby="confirmar-veto" @oncancel:preventDefault="@ocupado">
+    <h2 id="confirmar-veto" class="h5 fw-bold">@(objetivo is null ? "¿Aplicar veto?" : "¿Levantar veto?")</h2>
+    <p>@(objetivo is null ? "Bloqueará nuevas solicitudes del tutor y de todas sus mascotas. El veterinario podrá reservar presencialmente." : "Permitirá volver a solicitar turnos y reiniciará el conteo de cancelaciones.")</p>
+    @if (errorOperacion is not null) { <p class="alert alert-danger" role="alert">@errorOperacion</p> }
+    <label class="form-label" for="motivo-veto">Motivo (opcional)</label>
+    <textarea id="motivo-veto" class="form-control mb-3" maxlength="500" rows="3" @bind="motivo" disabled="@ocupado"></textarea>
+    <p class="small">Hasta 500 caracteres.</p>
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+        <button class="btn gestion-neutro rounded-pill" disabled="@ocupado" @onclick="CerrarAsync">Cancelar</button>
+        <button class="btn gestion-principal rounded-pill" disabled="@(ocupado || requiereActualizar)" @onclick="ConfirmarAsync">@(ocupado ? "Guardando…" : "Confirmar")</button>
+    </div>
+</dialog>
+
+@code {
+    [Parameter] public int TutorId { get; set; }
+    private readonly CancellationTokenSource cancelacion = new();
+    private Veto? vigente;
+    private List<Veto>? historial;
+    private int pagina = 1;
+    private int? objetivo;
+    private bool ocupado, cargado, requiereActualizar;
+    private string? error, errorOperacion, motivo;
+    private ElementReference dialogo;
+    private static string Fecha(DateTime fecha) => $"{fecha:dd/MM/yyyy HH:mm} UTC";
+    private static string Responsable(Veto veto) => veto.VeterinarioId is int id ? string.IsNullOrWhiteSpace(veto.VeterinarioNombre) ? $"Veterinario #{id}" : veto.VeterinarioNombre : "Aplicado automáticamente";
+    protected override Task OnInitializedAsync() => CargarAsync();
+    private async Task CargarAsync()
+    {
+        if (cancelacion.IsCancellationRequested) return;
+        var ct = cancelacion.Token;
+        cargado = false;
+        error = null;
+        try
+        {
+            vigente = await Api.VigenteAsync(TutorId, ct);
+            if (historial is not null) historial = await Api.ListarAsync(TutorId, pagina, ct);
+            cargado = true;
+        }
+        catch (GestionApiException ex) { error = ex.Message; }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+    }
+    private async Task MostrarHistorialAsync() => await PaginarAsync(0);
+    private async Task PaginarAsync(int avance)
+    {
+        if (ocupado) return;
+        ocupado = true;
+        try
+        {
+            var destino = avance == 0 ? 1 : pagina + avance;
+            var registros = await Api.ListarAsync(TutorId, destino, cancelacion.Token);
+            historial = registros;
+            pagina = destino;
+        }
+        catch (GestionApiException ex) { error = ex.Message; }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally { ocupado = false; }
+    }
+    private async Task AbrirAsync()
+    {
+        objetivo = vigente?.Id;
+        motivo = errorOperacion = null;
+        requiereActualizar = false;
+        await Js.InvokeVoidAsync("veteApp.abrirConfirmacion", dialogo);
+    }
+    private async Task CerrarAsync()
+    {
+        if (ocupado) return;
+        await Js.InvokeVoidAsync("veteApp.cerrarConfirmacion", dialogo);
+    }
+    private async Task ConfirmarAsync()
+    {
+        if (ocupado || requiereActualizar) return;
+        ocupado = true;
+        try
+        {
+            await Api.GuardarAsync(TutorId, objetivo, motivo, cancelacion.Token);
+            await Js.InvokeVoidAsync("veteApp.cerrarConfirmacion", dialogo);
+        }
+        catch (GestionApiException ex)
+        {
+            errorOperacion = ex.Message + " Cerrá este aviso y revisá el estado actualizado antes de volver a intentar.";
+            requiereActualizar = true;
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested) { }
+        finally { await CargarAsync(); ocupado = false; }
+    }
+    public void Dispose() { cancelacion.Cancel(); cancelacion.Dispose(); }
+}

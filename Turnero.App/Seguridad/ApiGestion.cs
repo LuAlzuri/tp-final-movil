@@ -40,6 +40,7 @@ public sealed class ApiGestion(SesionService sesion)
                     HttpStatusCode.Forbidden => recurso switch
                     {
                         "veterinarios" => "Tu cuenta no tiene permiso para gestionar veterinarios.",
+                        "vetos" => "Tu cuenta no tiene permiso para gestionar vetos.",
                         "auditoria" => "Tu cuenta no tiene permiso para consultar auditorías.",
                         "informes" => "Tu cuenta no tiene permiso para consultar informes.",
                         "turnos" => "Tu cuenta no tiene permiso para consultar turnos.",
@@ -72,6 +73,8 @@ public sealed class ApiGestion(SesionService sesion)
                         var detalle = await respuesta.Content.ReadFromJsonAsync<ErrorApi>(ct);
                         if (!string.IsNullOrWhiteSpace(detalle?.Error))
                             mensaje = detalle.Error;
+                        else if (detalle?.Errors is { Count: > 0 } errores)
+                            mensaje = string.Join(" ", errores.Values.SelectMany(e => e).Where(e => !string.IsNullOrWhiteSpace(e)).Distinct().Take(3));
                     }
                     catch (Exception ex) when (ex is JsonException or NotSupportedException)
                     {
@@ -79,7 +82,7 @@ public sealed class ApiGestion(SesionService sesion)
                     }
                 }
 
-                throw new GestionApiException(mensaje);
+                throw new GestionApiException(mensaje, respuesta.StatusCode);
             }
         }
         catch (HttpRequestException ex)
@@ -107,7 +110,10 @@ public sealed class ApiGestion(SesionService sesion)
         }
     }
 
-    private sealed record ErrorApi(string? Error);
+    private sealed record ErrorApi(string? Error, Dictionary<string, string[]>? Errors = null);
 }
 
-public sealed class GestionApiException(string mensaje) : Exception(mensaje);
+public sealed class GestionApiException(string mensaje, HttpStatusCode? estado = null) : Exception(mensaje)
+{
+    public HttpStatusCode? Estado { get; } = estado;
+}

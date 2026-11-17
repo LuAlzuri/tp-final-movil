@@ -27,6 +27,7 @@
                    href="@($"veterinario/tutores/{registro.Id}/editar")">Editar tutor</a>
             </article>
 
+            <VetosTutor @key="registro.Id" TutorId="@registro.Id" />
             <PerrosDelTutor @key="registro.Id" TutorId="@registro.Id" />
 
             <section class="mt-4" aria-labelledby="telefonos-tutor">

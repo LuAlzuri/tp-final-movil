@@ -5,6 +5,8 @@ using System.Net.Http.Json;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 using turnero_peluqueria.Data;
@@ -33,6 +35,25 @@ internal static partial class VerificacionAutenticacion
             await db.Database.MigrateAsync();
             Verificar(!(await db.Database.GetPendingMigrationsAsync()).Any(), "La cadena completa debe aplicarse a SQL Server");
             await VerificarConcurrenciaAsync(db, conexion.ConnectionString);
+            var normal = await db.Turnos.AsNoTracking().FirstAsync();
+            var legado = new Turno { PerroId = normal.PerroId };
+            db.Turnos.Add(legado);
+            await db.SaveChangesAsync();
+            db.AuditoriaAcciones.Add(new AuditoriaAccion
+            {
+                Accion = "SolicitarPresencial", Entidad = nameof(Turno), EntidadId = legado.Id.ToString()
+            });
+            await db.SaveChangesAsync();
+            var migrador = db.GetService<IMigrator>();
+            var anterior = db.Database.GetMigrations().Last(m => !m.EndsWith("RegistrarOrigenPresencialTurno"));
+            await migrador.MigrateAsync(anterior);
+            await migrador.MigrateAsync();
+            db.ChangeTracker.Clear();
+            var recuperado = await db.Turnos.AsNoTracking().SingleAsync(t => t.Id == legado.Id);
+            Verificar(recuperado.EsPresencial, "La migración recupera el origen presencial de las reservas anteriores");
+            Verificar(recuperado.EstadoId == Estado.Pendiente, "La migración no cambia el estado de las reservas anteriores");
+            Verificar(!await db.Turnos.Where(t => t.Id == normal.Id).Select(t => t.EsPresencial).SingleAsync(),
+                "La migración conserva el origen de las solicitudes normales");
             Console.WriteLine($"SQL Server y Kestrel verificados: {verificaciones} comprobaciones.");
         }
         finally
@@ -83,6 +104,24 @@ internal static partial class VerificacionAutenticacion
             && await db.CuposTurnos.Where(r => r.CupoId == cupo.Id).SumAsync(r => r.Cantidad) == 1
             && await db.ServiciosPorTurno.CountAsync() == 1,
             "La solicitud rechazada no deja una reserva ni servicios parciales");
+
+        using var otroVet = fabrica.CreateClient();
+        otroVet.DefaultRequestHeaders.Authorization = veterinario.DefaultRequestHeaders.Authorization;
+        var rutaVetos = $"/api/tutores/{perroUno.TutorId}/vetos";
+        sincronizador.Activar(sql => sql.Contains("FROM [Vetos]", StringComparison.Ordinal));
+        var altas = await Task.WhenAll(veterinario.PostAsync(rutaVetos, null), otroVet.PostAsync(rutaVetos, null));
+        Verificar(altas.Count(r => r.StatusCode == HttpStatusCode.Created) == 1
+            && altas.Count(r => r.StatusCode == HttpStatusCode.Conflict) == 1,
+            "Dos altas simultáneas dejan un único veto vigente y un conflicto");
+        foreach (var respuesta in altas) respuesta.Dispose();
+        var vetoVigenteSql = await db.Vetos.AsNoTracking().SingleAsync(v => v.TutorId == perroUno.TutorId && v.FechaFin == null);
+        sincronizador.Activar(sql => sql.Contains("FROM [Vetos]", StringComparison.Ordinal));
+        var bajas = await Task.WhenAll(veterinario.PostAsync($"{rutaVetos}/{vetoVigenteSql.Id}/levantar", null),
+            otroVet.PostAsync($"{rutaVetos}/{vetoVigenteSql.Id}/levantar", null));
+        Verificar(bajas.Count(r => r.StatusCode == HttpStatusCode.NoContent) == 1
+            && bajas.Count(r => r.StatusCode == HttpStatusCode.Conflict) == 1,
+            "Dos levantamientos simultáneos conservan un solo movimiento y devuelven un conflicto");
+        foreach (var respuesta in bajas) respuesta.Dispose();
 
         var rutaImagen = $"/api/perros/{perroUno.Id}/imagen";
         byte[] Png(SKColor color)

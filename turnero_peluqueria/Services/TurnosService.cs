@@ -25,8 +25,9 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
         {
             await using var transaccion = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
             var perros = db.Perros.AsNoTracking().Where(p => !p.Eliminado && !p.Tutor.Eliminado);
+            int? veterinarioId = null;
             if (presencial)
-                await Cuentas.ExigirVeterinarioAsync(db, usuarioId, ct);
+                veterinarioId = await Cuentas.ExigirVeterinarioAsync(db, usuarioId, ct);
             else
                 perros = perros.Where(p => p.Tutor.UserId == usuarioId);
 
@@ -59,12 +60,15 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
             var ahora = DateTime.UtcNow;
             var turno = new Turno
             {
-                PerroId = perro.Id, EstadoId = Estado.Pendiente, FechaSolicitud = ahora, FechaEstado = ahora
+                PerroId = perro.Id, EstadoId = presencial ? Estado.Aprobado : Estado.Pendiente,
+                VeterinarioId = veterinarioId, EsPresencial = presencial, FechaSolicitud = ahora, FechaEstado = ahora
             };
             db.CuposTurnos.Add(new CupoTurno { Turno = turno, CupoId = cupo.Id, Cantidad = CuposPorSolicitud });
             db.ServiciosPorTurno.AddRange(servicios.Select(id => new ServicioPorTurno { Turno = turno, ServicioId = id }));
             await db.SaveChangesAsync(ct);
             auditoria.Registrar(presencial ? "SolicitarPresencial" : "Solicitar", nameof(Turno), turno.Id);
+            if (presencial)
+                auditoria.Registrar("Aprobar", nameof(Turno), turno.Id);
             await db.SaveChangesAsync(ct);
             await transaccion.CommitAsync(ct);
             return turno.Id;
@@ -118,6 +122,9 @@ public sealed class TurnosService(AppDbContext db, AuditoriaAccionesService audi
         EjecutarCambioAsync(async () =>
         {
             var reserva = await BuscarReservaAsync(id, usuarioId, ct);
+            if (reserva.Turno.EsPresencial)
+                throw new ApiException("Los turnos reservados presencialmente no se pueden cancelar desde la app. Comunicate con el establecimiento.",
+                    StatusCodes.Status403Forbidden);
             if (reserva.Turno.EstadoId is not (Estado.Pendiente or Estado.Aprobado))
                 throw EstadoNoPermitido();
 
