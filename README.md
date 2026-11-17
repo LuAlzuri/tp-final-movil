@@ -260,6 +260,7 @@ Los formularios de alta muestran el mínimo de 12 caracteres para la contraseña
 dotnet run --project tests/VerificacionAutenticacion/VerificacionAutenticacion.csproj
 dotnet run --project tests/VerificacionModelo/VerificacionModelo.csproj
 dotnet run --project tests/VerificacionVetosApp/VerificacionVetosApp.csproj
+node tests/VerificacionDialogosApp/verificar-dialogos.cjs
 ```
 
 Las pruebas de API ejercitan el bloqueo, reserva presencial con aprobación directa y cancelación del tutor prohibida, finalización sin levantar el veto, levantamiento y nueva solicitud del tutor; también el veto automático entre mascotas, reinicios del conteo, permisos, auditoría, conflictos por operaciones repetidas, motivos de 500/501 caracteres y consulta vigente fuera de la primera página. Las pruebas del cliente usan un transporte HTTP simulado con los clientes reales y verifican autenticación, rutas, paginación, errores y límites de contraseña de los modelos de formularios.
@@ -277,3 +278,6 @@ Resultado de esta revisión: 387 comprobaciones de API, 158 del modelo y 55 de c
 Para actualizar el servidor con este cambio: generar el script SQL idempotente con `dotnet ef migrations script --idempotent --project turnero_peluqueria --output artifacts/monsterasp-migraciones.sql`, aplicar las migraciones pendientes en la base y luego publicar la API y actualizar la app. Esta implementación no ejecuta cambios sobre MonsterASP ni publica versiones. Las solicitudes normales siguen pendientes hasta la aprobación del veterinario. Las reservas presenciales anteriores conservan su estado: si estaban pendientes, el veterinario debe aprobarlas por el circuito existente.
 
 El script idempotente de esta migración ejecuta el UPDATE mediante EXEC para evitar el error SQL Server 207 (columna EsPresencial todavía inexistente al compilar el lote). Se verifica su ejecución completa desde el esquema anterior y una segunda ejecución sin cambios pendientes. Si se generó un script antes de esta corrección, debe regenerarse antes de ejecutarlo en SSMS.
+
+
+En la app, el diálogo de vetos controla el cierre por Escape mediante el evento nativo cancel y un atributo data-ocupado. Esto evita emitir atributos Razor no reconocidos por el WebView de Android y mantiene el bloqueo de cierre durante el envío. La prueba de diálogos requiere Node.js y no depende de la API ni de una base de datos.

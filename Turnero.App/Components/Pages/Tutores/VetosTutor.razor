@@ -53,7 +53,7 @@
 </section>
 </AuthorizeView>
 
-<dialog @ref="dialogo" class="gestion-dialogo" aria-labelledby="confirmar-veto" @oncancel:preventDefault="@ocupado">
+<dialog @ref="dialogo" class="gestion-dialogo" aria-labelledby="confirmar-veto" data-ocupado="@(ocupado ? "true" : "false")">
     <h2 id="confirmar-veto" class="h5 fw-bold">@(objetivo is null ? "¿Aplicar veto?" : "¿Levantar veto?")</h2>
     <p>@(objetivo is null ? "Bloqueará nuevas solicitudes del tutor y de todas sus mascotas. El veterinario podrá reservar presencialmente." : "Permitirá volver a solicitar turnos y reiniciará el conteo de cancelaciones.")</p>
     @if (errorOperacion is not null) { <p class="alert alert-danger" role="alert">@errorOperacion</p> }
