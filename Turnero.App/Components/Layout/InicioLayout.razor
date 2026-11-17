@@ -76,11 +76,8 @@
         </main>
 
         <AuthorizeView>
-            @{
-                var menuMascota = EsMenuMascota(context.User);
-                var mostrarAtajos = menuMascota || MostrarAtajos(context.User);
-            }
-            <footer class="inicio-pie d-flex justify-content-center align-items-center @(menuMascota ? "inicio-pie-mascota flex-row-reverse" : "")">
+            @{ var mostrarAtajos = context.User.IsInRole(Roles.Tutor) || MostrarAtajos(context.User); }
+            <footer class="inicio-pie d-flex justify-content-center align-items-center">
                 @if (mostrarAtajos)
                 {
                     <button type="button" class="btn inicio-atajo flex-fill" aria-label="Volver a la pantalla anterior"
@@ -91,13 +88,10 @@
                         <img src="images/inicio.svg" width="32" height="32" alt="" />
                     </a>
                 }
-                @if (!menuMascota)
-                {
-                    <button type="button" class="btn inicio-atajo @(mostrarAtajos ? "flex-fill" : "")"
-                            aria-label="Cerrar sesión" disabled="@cerrandoSesion" @onclick="CerrarSesionAsync">
-                        <img src="images/salir.svg" width="32" height="32" alt="" />
-                    </button>
-                }
+                <button type="button" class="btn inicio-atajo @(mostrarAtajos ? "flex-fill" : "")"
+                        aria-label="Cerrar sesión" disabled="@cerrandoSesion" @onclick="CerrarSesionAsync">
+                    <img src="images/salir.svg" width="32" height="32" alt="" />
+                </button>
             </footer>
         </AuthorizeView>
     </div>
