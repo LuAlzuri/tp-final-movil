@@ -36,7 +36,7 @@ stateDiagram-v2
 
 ### Circuito de la reserva presencial
 
-Cuando un tutor tiene un veto vigente, debe comunicarse con el establecimiento para coordinar la reserva. El veterinario ingresa a **Listado de tutores → Detalle del tutor → Reserva presencial**, selecciona una mascota del tutor, un día con cupos disponibles y entre uno y diez servicios.
+Cuando un tutor tiene un veto vigente, debe comunicarse con el establecimiento para coordinar la reserva. El veterinario ingresa a **Turnos → Turnos presenciales**, elige un tutor con veto vigente y selecciona una mascota del tutor, un día con cupos disponibles y entre uno y diez servicios. También puede acceder desde **Listado de tutores → Detalle del tutor → Reserva presencial**.
 
 ```mermaid
 stateDiagram-v2
@@ -229,7 +229,7 @@ Las fotos se guardan en `turnero_peluqueria/wwwroot/uploads`. Al desplegar, esa 
 | Veterinario | Completar la atención y registrar los servicios realizados y las observaciones. | Turnos → Completar turno | Realizado |
 | Veterinario | Registrar tratamientos y sus motivos al completar un turno. | Turnos → Completar turno → Gestionar | Realizado |
 | Veterinario | Consultar, aplicar y levantar vetos. | Detalle del tutor → Vetos del tutor e historial paginado | Realizado |
-| Veterinario | Registrar una reserva presencial para un tutor con veto vigente. | Detalle del tutor → Reserva presencial → Mascota, día y servicios | Realizado |
+| Veterinario | Registrar una reserva presencial para un tutor con veto vigente. | Turnos → Turnos presenciales → Tutor vetado → Mascota, día y servicios; también desde el detalle del tutor | Realizado |
 | Administrador | Gestionar veterinarios. | Gestionar veterinarios | Realizado |
 | Administrador | Gestionar catálogos. | Gestionar catálogos | Realizado |
 | Administrador | Consultar movimientos de auditoría. | Consultar auditoría → Movimientos | Realizado |
@@ -244,7 +244,9 @@ Aplicar y levantar requieren confirmación, con motivo opcional de hasta 500 car
 
 La consulta `GET /api/tutores/{tutorId}/vetos/vigente` devuelve `{ "veto": null }` o el veto vigente, sin depender de las páginas del historial. Este endpoint y el historial son exclusivos del veterinario. Las respuestas de veto incorporan `veterinarioNombre` cuando corresponde. **La API deberá incorporar estos cambios antes de utilizar esta versión del front con el servidor alojado.** Es necesario aplicar la migración `RegistrarOrigenPresencialTurno` antes de actualizar la API. Agrega `Turnos.EsPresencial` y recupera el origen de las reservas anteriores que tienen auditoría `SolicitarPresencial`; conserva sus estados.
 
-Con veto vigente aparece **Reserva presencial** en el detalle del tutor. Permite elegir una de sus mascotas, una fecha desde hoy con disponibilidad y entre uno y diez servicios. Reutiliza el selector de servicios y la confirmación de solicitud. Envía `POST /api/turnos/presencial`; queda aprobada directamente, con el veterinario responsable y registros de creación y aprobación en auditoría. El tutor no puede cancelarla desde la app ni llamando directamente a la API, aunque después se levante su veto. El veterinario conserva la cancelación y la finalización de la atención. La API conserva las validaciones de pertenencia, cupos, fechas y vigencia del veto.
+En **Turnos**, debajo de **Gestionar solicitudes**, aparece la tarjeta **Turnos presenciales**. Lista únicamente tutores activos con veto vigente, consultado mediante el endpoint específico para cada tutor y considerando todas las páginas del listado de tutores. Si no hay ninguno, muestra **No hay tutores vetados**. Si una consulta falla, muestra un error y permite reintentar, sin presentar una lista parcial como si estuviera completa. La lista puede actualizarse y el formulario vuelve a comprobar el veto al ingresar. Este acceso reutiliza la API existente, sin nuevos endpoints ni migraciones.
+
+Con veto vigente también aparece **Reserva presencial** en el detalle del tutor. Permite elegir una de sus mascotas, una fecha desde hoy con disponibilidad y entre uno y diez servicios. Reutiliza el selector de servicios y la confirmación de solicitud. Envía `POST /api/turnos/presencial`; queda aprobada directamente, con el veterinario responsable y registros de creación y aprobación en auditoría. El tutor no puede cancelarla desde la app ni llamando directamente a la API, aunque después se levante su veto. El veterinario conserva la cancelación y la finalización de la atención. La API conserva las validaciones de pertenencia, cupos, fechas y vigencia del veto.
 
 El tutor vetado conserva acceso a sus mascotas, estados e historial. Si solicita un turno, la API bloquea la operación y la interfaz indica que debe comunicarse con el establecimiento. La app del tutor no consulta endpoints internos de vetos.
 
@@ -270,7 +272,7 @@ dotnet run --project tests/VerificacionAutenticacion/VerificacionAutenticacion.c
 
 Este modo crea y elimina una base temporal; incluye altas y levantamientos de veto simultáneos. Se ejecutó este modo contra SQL Server LocalDB: 24 comprobaciones correctas, incluidas las operaciones de veto simultáneas. Queda pendiente repetir el circuito completo en Android contra una API local actualizada. Las comprobaciones de UI en navegador con datos simulados no sustituyen esa prueba integrada en el dispositivo.
 
-Resultado de esta revisión: 387 comprobaciones de API, 158 del modelo y 49 de clientes/formularios correctas; compilación Android sin errores ni advertencias. En navegador móvil se verificaron aplicación, historial, reserva presencial con confirmación y retorno al tutor, levantamiento y disposición horizontal, usando datos simulados.
+Resultado de esta revisión: 387 comprobaciones de API, 158 del modelo y 55 de clientes/formularios correctas; compilación Android sin errores ni advertencias. En navegador móvil se verificaron aplicación, historial, reserva presencial con confirmación y retorno al tutor, levantamiento y disposición horizontal, usando datos simulados.
 
 Para actualizar el servidor con este cambio: generar el script SQL idempotente con `dotnet ef migrations script --idempotent --project turnero_peluqueria --output artifacts/monsterasp-migraciones.sql`, aplicar las migraciones pendientes en la base y luego publicar la API y actualizar la app. Esta implementación no ejecuta cambios sobre MonsterASP ni publica versiones. Las solicitudes normales siguen pendientes hasta la aprobación del veterinario. Las reservas presenciales anteriores conservan su estado: si estaban pendientes, el veterinario debe aprobarlas por el circuito existente.
 

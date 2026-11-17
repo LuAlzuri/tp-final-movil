@@ -12,6 +12,7 @@
     <Compile Include="../../Turnero.App/Vetos/VetosApi.cs" Link="VetosApi.cs" />
     <Compile Include="../../Turnero.App/Turnos/TurnosApi.cs" Link="TurnosApi.cs" />
     <Compile Include="../../Turnero.App/Tutores/Tutor.cs" Link="Tutor.cs" />
+    <Compile Include="../../Turnero.App/Tutores/TutoresApi.cs" Link="TutoresApi.cs" />
     <Compile Include="../../Turnero.App/Veterinarios/Veterinario.cs" Link="Veterinario.cs" />
   </ItemGroup>
 </Project>

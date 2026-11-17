@@ -52,6 +52,35 @@ await vetos.GuardarAsync(7, null, null, default);
 await vetos.GuardarAsync(7, 4, null, default);
 await turnos.ReservarPresencialAsync(9, 12, [1, 2], default);
 
+var consultasVigentes = new System.Collections.Concurrent.ConcurrentDictionary<int, byte>();
+var tutoresPrueba = Enumerable.Range(1, 101)
+    .Select(id => new Tutor(id, $"tutor{id}", $"tutor{id}@pruebas.local", "Tutor", $"Apellido {id}", [])).ToList();
+transporte.Responder = solicitud =>
+{
+    var ruta = solicitud.RequestUri!.AbsolutePath;
+    if (ruta == "/api/tutores")
+    {
+        var segunda = solicitud.RequestUri.Query.Contains("pagina=2&");
+        return Task.FromResult(Transporte.Json(HttpStatusCode.OK, segunda ? tutoresPrueba.Skip(100).ToList() : tutoresPrueba.Take(100).ToList()));
+    }
+    if (!ruta.EndsWith("/vetos/vigente")) throw new InvalidOperationException("Se consultó el historial en lugar del veto vigente");
+    var id = int.Parse(ruta.Split('/')[3]);
+    consultasVigentes.TryAdd(id, 0);
+    var veto = id == 101 ? new Veto(1, id, null, DateTime.UtcNow, "Automático", null, null) : null;
+    return Task.FromResult(Transporte.Json(HttpStatusCode.OK, new EstadoVeto(veto)));
+};
+var todosLosTutores = await new TutoresApi(gestion).ListarAsync(default);
+var tutoresVetados = await vetos.FiltrarTutoresVetadosAsync(todosLosTutores, default);
+Verificar(todosLosTutores.Count == 101, "La selección considera todas las páginas de tutores");
+Verificar(tutoresVetados.Select(t => t.Id).SequenceEqual([101]), "Solo se permite elegir tutores con veto vigente, incluso fuera de la primera página");
+Verificar(consultasVigentes.Count == 101, "El filtro consulta el estado vigente de cada tutor y no una página del historial");
+transporte.Responder = _ => Task.FromResult(Transporte.Json(HttpStatusCode.OK, new EstadoVeto(null)));
+Verificar((await vetos.FiltrarTutoresVetadosAsync(tutoresPrueba, default)).Count == 0, "Una consulta exitosa sin vetos devuelve la lista vacía");
+transporte.Responder = _ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+await ErrorAsync(() => vetos.FiltrarTutoresVetadosAsync(tutoresPrueba, default), HttpStatusCode.InternalServerError, "no pudo completar");
+transporte.Responder = _ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden));
+await ErrorAsync(() => vetos.FiltrarTutoresVetadosAsync(tutoresPrueba, default), HttpStatusCode.Forbidden, "permiso para gestionar vetos");
+
 async Task ErrorAsync(Func<Task> accion, HttpStatusCode? estado, string texto)
 {
     try { await accion(); throw new InvalidOperationException("Faltó rechazar la operación"); }
