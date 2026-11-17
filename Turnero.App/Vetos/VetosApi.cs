@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
 using Turnero.App.Seguridad;
+using Turnero.App.Tutores;
+using System.Collections.Concurrent;
 
 namespace Turnero.App.Vetos;
 
@@ -10,6 +12,20 @@ internal sealed record EstadoVeto(Veto? Veto);
 internal sealed class VetosApi(ApiGestion api)
 {
     private static string Ruta(int tutorId) => $"api/tutores/{tutorId}/vetos";
+
+    public async Task<List<Tutor>> FiltrarTutoresVetadosAsync(IReadOnlyCollection<Tutor> tutores, CancellationToken ct)
+    {
+        var vetados = new ConcurrentBag<Tutor>();
+        await Parallel.ForEachAsync(tutores,
+            new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct },
+            async (tutor, token) =>
+            {
+                if (await VigenteAsync(tutor.Id, token) is not null)
+                    vetados.Add(tutor);
+            });
+        return vetados.OrderBy(t => t.Apellido, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(t => t.Nombre, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.Id).ToList();
+    }
 
     public async Task<Veto?> VigenteAsync(int tutorId, CancellationToken ct)
     {
