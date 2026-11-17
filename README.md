@@ -34,6 +34,23 @@ stateDiagram-v2
 - **Finalización de la atención.** Solo puede completarse un turno aprobado cuya fecha ya haya llegado. Se distinguen los servicios solicitados de los efectivamente realizados y se conservan las observaciones y los tratamientos registrados.
 - **Vetos de reserva.** Tres cancelaciones del tutor generan un veto automático, con un conteo que se reinicia tras una atención completada o el levantamiento de un veto. El veterinario también puede aplicar vetos manuales. Un tutor vetado conserva la posibilidad de recibir una reserva presencial gestionada por un veterinario desde el detalle del tutor.
 
+### Circuito de la reserva presencial
+
+Cuando un tutor tiene un veto vigente, debe comunicarse con el establecimiento para coordinar la reserva. El veterinario ingresa a **Listado de tutores → Detalle del tutor → Reserva presencial**, selecciona una mascota del tutor, un día con cupos disponibles y entre uno y diez servicios.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Aprobado: Reserva presencial registrada por el veterinario
+    Aprobado --> Completado: Registro de la atención
+    Aprobado --> CanceladoPorVeterinario: Cancelación veterinaria
+```
+
+- **Aprobación directa.** La reserva se crea aprobada, ocupa inicialmente un cupo y registra al veterinario responsable. No pasa por el estado pendiente ni requiere una segunda aprobación.
+- **Cancelación.** El tutor puede consultar el turno, pero no cancelarlo desde la app, incluso si posteriormente se levanta su veto. Para cambios o cancelaciones debe comunicarse con el establecimiento; la cancelación la realiza el veterinario.
+- **Atención e historial.** Al llegar la fecha, el veterinario registra los servicios realizados, tratamientos y observaciones y completa el turno. La atención queda disponible en el historial de la mascota. Completarla reinicia el conteo de cancelaciones, pero no levanta un veto vigente.
+
+La API conserva las validaciones de disponibilidad, mascota y veto vigente y registra la creación, aprobación y posteriores operaciones en auditoría.
+
 ## Arquitectura y persistencia
 
 ```mermaid
