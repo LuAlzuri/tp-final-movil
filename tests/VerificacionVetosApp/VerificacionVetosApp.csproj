@@ -8,6 +8,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Compile Include="../../Turnero.App/Seguridad/*.cs" Link="Seguridad/%(Filename)%(Extension)" />
+    <Compile Include="../../Turnero.App/Auditoria/*.cs" Link="Auditoria/%(Filename)%(Extension)" />
     <Compile Include="../../Turnero.App/Vetos/VetosApi.cs" Link="VetosApi.cs" />
     <Compile Include="../../Turnero.App/Turnos/TurnosApi.cs" Link="TurnosApi.cs" />
     <Compile Include="../../Turnero.App/Tutores/Tutor.cs" Link="Tutor.cs" />

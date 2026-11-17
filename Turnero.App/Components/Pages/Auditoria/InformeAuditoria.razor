@@ -35,13 +35,13 @@
                     {
                         <table class="table table-striped align-middle mb-0">
                             <thead>
-                                <tr><th scope="col">Fecha (UTC)</th><th scope="col">Nivel</th><th scope="col">Mensaje</th></tr>
+                                <tr><th scope="col">Fecha <span class="d-block small fw-normal">Argentina</span></th><th scope="col">Nivel</th><th scope="col">Mensaje</th></tr>
                             </thead>
                             <tbody>
                                 @foreach (var registro in errores)
                                 {
                                     <tr>
-                                        <td class="informe-fecha">@registro.FechaUtc.UtcDateTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                        <td class="informe-fecha">@registro.FechaArgentina</td>
                                         <td>@registro.Nivel</td>
                                         <td>
                                             <div>@registro.Mensaje</div>
@@ -78,13 +78,13 @@
                                 <col />
                             </colgroup>
                             <thead>
-                                <tr><th scope="col">Fecha (UTC)</th><th scope="col">Acción</th><th scope="col">Datos del movimiento</th></tr>
+                                <tr><th scope="col">Fecha <span class="d-block small fw-normal">Argentina</span></th><th scope="col">Acción</th><th scope="col">Datos del movimiento</th></tr>
                             </thead>
                             <tbody>
                                 @foreach (var registro in movimientos)
                                 {
                                     <tr @key="registro.Id">
-                                        <td class="informe-fecha">@registro.FechaUtc.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                        <td class="informe-fecha">@registro.FechaArgentina</td>
                                         <td>@registro.Accion</td>
                                         <td>
                                             <dl class="small mb-0">

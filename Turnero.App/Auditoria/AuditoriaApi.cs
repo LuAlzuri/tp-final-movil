@@ -3,10 +3,16 @@ using Turnero.App.Seguridad;
 namespace Turnero.App.Auditoria;
 
 internal sealed record ErrorAuditoria(DateTimeOffset FechaUtc, string Nivel, string Mensaje,
-    string? Origen, string? Metodo, string? Ruta, string? IdSolicitud);
+    string? Origen, string? Metodo, string? Ruta, string? IdSolicitud)
+{
+    public string FechaArgentina => HoraAuditoria.Formatear(FechaUtc);
+}
 
 internal sealed record MovimientoAuditoria(long Id, int? UsuarioId, string? UsuarioEmail, string Accion,
-    string Entidad, string? EntidadId, DateTime FechaUtc, string? Ip, string? Observacion);
+    string Entidad, string? EntidadId, DateTimeOffset FechaUtc, string? Ip, string? Observacion)
+{
+    public string FechaArgentina => HoraAuditoria.Formatear(FechaUtc);
+}
 
 internal sealed class AuditoriaApi(ApiGestion api)
 {
