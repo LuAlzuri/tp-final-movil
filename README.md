@@ -16,6 +16,8 @@ El administrador crea las cuentas de los veterinarios y estos registran a los tu
 
 **Alcance actual de la interfaz.** Quedan pendientes las pantallas para cambiar la contraseña y quitar la foto de un perro.
 
+**APK de prueba para Android.** La versión 1.0.2 (código 3), con las correcciones de vetos y del diálogo de Android, se descarga desde [GitHub Releases](https://github.com/LuAlzuri/tp-final-movil/releases/tag/v1.0.2-prueba.1). Está destinada a teléfonos ARM64 con Android 7.0 o superior y utiliza la API alojada en MonsterASP.
+
 ## Cómo se gestiona un turno
 
 ```mermaid
