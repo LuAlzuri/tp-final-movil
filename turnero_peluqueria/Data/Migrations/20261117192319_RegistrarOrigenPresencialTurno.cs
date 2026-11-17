@@ -17,15 +17,18 @@ namespace turnero_peluqueria.Data.Migrations
                 nullable: false,
                 defaultValue: false);
 
-            // Conserva el origen de las reservas existentes sin modificar su estado.
+            // EXEC demora la compilación del UPDATE hasta que exista la columna,
+            // también al ejecutar el script idempotente en SSMS.
             migrationBuilder.Sql("""
+                EXEC(N'
                 UPDATE t SET [EsPresencial] = 1
                 FROM [Turnos] AS t
                 WHERE EXISTS (
                     SELECT 1 FROM [AuditoriaAcciones] AS a
-                    WHERE a.[Entidad] = N'Turno' AND a.[Accion] = N'SolicitarPresencial'
+                    WHERE a.[Entidad] = N''Turno'' AND a.[Accion] = N''SolicitarPresencial''
                       AND a.[EntidadId] = CONVERT(nvarchar(100), t.[id_turno])
                 );
+                ');
                 """);
         }
 
