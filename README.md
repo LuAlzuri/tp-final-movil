@@ -268,8 +268,10 @@ Para comprobar concurrencia real en SQL Server, configurar `TURNERO_SQLSERVER_PR
 dotnet run --project tests/VerificacionAutenticacion/VerificacionAutenticacion.csproj -- --sqlserver
 ```
 
-Este modo crea y elimina una base temporal; incluye altas y levantamientos de veto simultáneos. Se ejecutó este modo contra SQL Server LocalDB: 22 comprobaciones correctas, incluidas las operaciones de veto simultáneas. Queda pendiente repetir el circuito completo en Android contra una API local actualizada. Las comprobaciones de UI en navegador con datos simulados no sustituyen esa prueba integrada en el dispositivo.
+Este modo crea y elimina una base temporal; incluye altas y levantamientos de veto simultáneos. Se ejecutó este modo contra SQL Server LocalDB: 24 comprobaciones correctas, incluidas las operaciones de veto simultáneas. Queda pendiente repetir el circuito completo en Android contra una API local actualizada. Las comprobaciones de UI en navegador con datos simulados no sustituyen esa prueba integrada en el dispositivo.
 
 Resultado de esta revisión: 387 comprobaciones de API, 158 del modelo y 42 de clientes/formularios correctas; compilación Android sin errores ni advertencias. En navegador móvil se verificaron aplicación, historial, reserva presencial con confirmación y retorno al tutor, levantamiento y disposición horizontal, usando datos simulados.
 
 Para actualizar el servidor con este cambio: generar el script SQL idempotente con `dotnet ef migrations script --idempotent --project turnero_peluqueria --output artifacts/monsterasp-migraciones.sql`, aplicar las migraciones pendientes en la base y luego publicar la API y actualizar la app. Esta implementación no ejecuta cambios sobre MonsterASP ni publica versiones. Las solicitudes normales siguen pendientes hasta la aprobación del veterinario. Las reservas presenciales anteriores conservan su estado: si estaban pendientes, el veterinario debe aprobarlas por el circuito existente.
+
+El script idempotente de esta migración ejecuta el UPDATE mediante EXEC para evitar el error SQL Server 207 (columna EsPresencial todavía inexistente al compilar el lote). Se verifica su ejecución completa desde el esquema anterior y una segunda ejecución sin cambios pendientes. Si se generó un script antes de esta corrección, debe regenerarse antes de ejecutarlo en SSMS.

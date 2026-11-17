@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -47,7 +48,22 @@ internal static partial class VerificacionAutenticacion
             var migrador = db.GetService<IMigrator>();
             var anterior = db.Database.GetMigrations().Last(m => !m.EndsWith("RegistrarOrigenPresencialTurno"));
             await migrador.MigrateAsync(anterior);
-            await migrador.MigrateAsync();
+            var script = migrador.GenerateScript(options: MigrationsSqlGenerationOptions.Idempotent);
+            await using (var accesoScript = new SqlConnection(conexion.ConnectionString))
+            {
+                await accesoScript.OpenAsync();
+                for (var intento = 0; intento < 2; intento++)
+                {
+                    foreach (var lote in Regex.Split(script, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase))
+                    {
+                        if (string.IsNullOrWhiteSpace(lote)) continue;
+                        await using var comando = new SqlCommand(lote, accesoScript) { CommandTimeout = 60 };
+                        await comando.ExecuteNonQueryAsync();
+                    }
+                    Verificar(!(await db.Database.GetPendingMigrationsAsync()).Any(),
+                        "El script idempotente completo se ejecuta y puede repetirse sobre una base existente");
+                }
+            }
             db.ChangeTracker.Clear();
             var recuperado = await db.Turnos.AsNoTracking().SingleAsync(t => t.Id == legado.Id);
             Verificar(recuperado.EsPresencial, "La migración recupera el origen presencial de las reservas anteriores");
