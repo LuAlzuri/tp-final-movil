@@ -76,7 +76,7 @@
         </main>
 
         <AuthorizeView>
-            @{ var mostrarAtajos = context.User.IsInRole(Roles.Tutor) || MostrarAtajos(context.User); }
+            @{ var mostrarAtajos = EsMenuMascota(context.User) || MostrarAtajos(context.User); }
             <footer class="inicio-pie d-flex justify-content-center align-items-center">
                 @if (mostrarAtajos)
                 {
