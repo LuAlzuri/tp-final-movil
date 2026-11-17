@@ -7,6 +7,7 @@ using Turnero.App.Turnos;
 using Turnero.App.Vetos;
 using Turnero.App.Tutores;
 using Turnero.App.Veterinarios;
+using Turnero.App.Auditoria;
 
 var comprobaciones = 0;
 void Verificar(bool condicion, string detalle)
@@ -95,6 +96,27 @@ var recibido = JsonSerializer.Deserialize<Turno>("""
     "fechaCupo":"2026-11-20","cuposReservados":1,"servicios":[],"tratamientos":[],"esPresencial":true}
     """, new JsonSerializerOptions(JsonSerializerDefaults.Web));
 Verificar(recibido is { EsPresencial: true, PuedeCancelarTutor: false }, "El cliente recibe el origen presencial desde la API");
+var fechaUtc = DateTimeOffset.Parse("2026-11-17T19:30:45Z");
+var errorAuditoria = new ErrorAuditoria(fechaUtc, "Error", "Prueba", null, null, null, null);
+var movimiento = new MovimientoAuditoria(1, 1, null, "AplicarVeto", "Veto", "1", fechaUtc, null, null);
+Verificar(errorAuditoria.FechaArgentina == "17/11/2026 16:30:45", "Los errores muestran hora argentina y conservan los segundos");
+Verificar(movimiento.FechaArgentina == errorAuditoria.FechaArgentina, "Ambas grillas de auditoría muestran la misma zona horaria");
+Verificar(errorAuditoria.FechaUtc == fechaUtc && movimiento.FechaUtc == fechaUtc, "La presentación no modifica el instante recibido de la API");
+Verificar(HoraAuditoria.Formatear(DateTimeOffset.Parse("2026-11-17T01:15:00Z")) == "16/11/2026 22:15:00",
+    "La conversión también ajusta el día al cruzar medianoche");
+Verificar(HoraAuditoria.Formatear(DateTimeOffset.Parse("2027-01-01T01:00:00Z")) == "31/12/2026 22:00:00",
+    "La conversión ajusta el mes y el año");
+Verificar(HoraAuditoria.Formatear(DateTimeOffset.Parse("2026-11-17T20:30:45+01:00")) == errorAuditoria.FechaArgentina,
+    "La hora del servidor no altera la presentación del mismo instante");
+var opcionesJson = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+var errorRecibido = JsonSerializer.Deserialize<ErrorAuditoria>("""
+    {"fechaUtc":"2026-11-17T19:30:45Z","nivel":"Error","mensaje":"Prueba"}
+    """, opcionesJson);
+var movimientoRecibido = JsonSerializer.Deserialize<MovimientoAuditoria>("""
+    {"id":1,"accion":"AplicarVeto","entidad":"Veto","fechaUtc":"2026-11-17T19:30:45Z"}
+    """, opcionesJson);
+Verificar(errorRecibido?.FechaArgentina == "17/11/2026 16:30:45" && movimientoRecibido?.FechaArgentina == errorRecibido.FechaArgentina,
+    "Las respuestas JSON de errores y movimientos mantienen el contrato UTC y se presentan en Argentina");
 Console.WriteLine($"Clientes y formularios verificados: {comprobaciones} comprobaciones.");
 
 public interface ISecureStorage
